@@ -1,0 +1,1 @@
+# algokit-beaker-playground-template
