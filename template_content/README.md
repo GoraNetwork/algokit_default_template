@@ -8,7 +8,7 @@ This project has been generated using AlgoKit. See below for default getting sta
 
 1. Clone this repository: `git clone {repository_url}`
 2. Install pre-requisites:
-   - If you have AlgoKit installed, run `algokit bootstrap poetry` within this folder;
+   - If you have AlgoKit installed, run `algokit bootstrap all` within this folder;
    - or:
      - Install `Python` - [Link](https://www.python.org/downloads/): The minimum required version is `3.10`. Ensure you can execute `python -V` and get `3.10`+.
      - Install `Poetry` - [Link](https://python-poetry.org/docs/#installation): The minimum required version is `1.2`. Ensure you can execute `poetry -V` and get `1.2`+.
@@ -17,7 +17,7 @@ This project has been generated using AlgoKit. See below for default getting sta
    - VS Code
      1. Open the repository root in VS Code
      2. Install recommended extensions
-     3. Hit F5 (or whatever you have debug mapped to) and it should start running with breakpoint debugging.
+     3. Hit F5 (or whatever you have debug mapped to) while you have a contract open (default: playground/hello_world/helloworld.py) and it should start running the `demo.py` file associated with that contract which will build it, deploy it and call it after starting LocalNet.
         > **Note**
         > If using Windows: Before running for the first time you will need to select the Python Interpreter.
         1. Open the command palette (Ctrl + P)
@@ -30,9 +30,9 @@ This project has been generated using AlgoKit. See below for default getting sta
    - Other
      1. Open the repository root in your text editor of choice
      2. In a terminal run `poetry shell`
-     3. Run `python -m smart_contracts` through your debugger of choice
+     3. Run `python -m playground.hello_world.demo` through your debugger of choice
 
 ### Subsequently
 
-1. If you update to the latest source code and there are new dependencies you will need to run `poetry install` again
+1. If you update to the latest source code and there are new dependencies you will need to run `algokit bootstrap all` again
 2. Follow step 3 above

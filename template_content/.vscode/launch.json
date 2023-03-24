@@ -1,0 +1,30 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Demo current contract (+ LocalNet)",
+      "type": "python",
+      "request": "launch",
+      "module": "demo",
+      "cwd": "${fileDirname}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Start AlgoKit LocalNet"
+    },
+    {
+      "name": "Demo current contract",
+      "type": "python",
+      "request": "launch",
+      "module": "demo",
+      "cwd": "${fileDirname}",
+      "console": "integratedTerminal",
+    },
+    {
+      "name": "Build current contract",
+      "type": "python",
+      "request": "launch",
+      "module": "build",
+      "cwd": "${fileDirname}",
+      "console": "integratedTerminal",
+    }
+  ]
+}

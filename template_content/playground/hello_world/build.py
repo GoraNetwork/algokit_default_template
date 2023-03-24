@@ -7,6 +7,7 @@ def build() -> Path:
     app_spec = helloworld.app.build()
     output_dir = Path(__file__).parent / "artifacts"
     app_spec.export(output_dir)
+    print(f"Dumping {app_spec.contract.name} to {output_dir}")
     return output_dir / "application.json"
 
 
