@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "wholroyd.jinja",
+    "ms-python.python",
+    "bungcip.better-toml",
+    "editorconfig.editorconfig",
+    "charliermarsh.ruff",
+    "matangover.mypy"
+  ]
+}
