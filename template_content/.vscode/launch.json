@@ -5,7 +5,7 @@
       "name": "Demo current contract (+ LocalNet)",
       "type": "python",
       "request": "launch",
-      "module": "demo",
+      "program": "demo.py",
       "cwd": "${fileDirname}",
       "console": "integratedTerminal",
       "preLaunchTask": "Start AlgoKit LocalNet"
@@ -14,7 +14,7 @@
       "name": "Demo current contract",
       "type": "python",
       "request": "launch",
-      "module": "demo",
+      "program": "demo.py",
       "cwd": "${fileDirname}",
       "console": "integratedTerminal",
     },
@@ -22,7 +22,7 @@
       "name": "Build current contract",
       "type": "python",
       "request": "launch",
-      "module": "build",
+      "program": "build.py",
       "cwd": "${fileDirname}",
       "console": "integratedTerminal",
     }
