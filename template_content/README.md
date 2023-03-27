@@ -6,21 +6,21 @@ This project has been generated using AlgoKit. See below for default getting sta
 
 ### Initial setup
 
-1. Clone this repository: `git clone {repository_url}`
+1. Clone this repository locally
 2. Install pre-requisites:
-   - If you have AlgoKit installed, run `algokit bootstrap all` within this folder;
-   - or:
-     - Install `Python` - [Link](https://www.python.org/downloads/): The minimum required version is `3.10`. Ensure you can execute `python -V` and get `3.10`+.
-     - Install `Poetry` - [Link](https://python-poetry.org/docs/#installation): The minimum required version is `1.2`. Ensure you can execute `poetry -V` and get `1.2`+.
-     - If you're not using PyCharm, then run `poetry install` in the root directory (this should set up `.venv` and also install all Python dependencies) - PyCharm will do this for you automatically on startup 🪄.
+   - Install `AlgoKit` - [Link](https://github.com/algorandfoundation/algokit-cli#install): Ensure you can execute `algokit --version`.
+   - Bootstrap your local environment; run `algokit bootstrap all` within this folder, which will:
+     - Install `Poetry` - [Link](https://python-poetry.org/docs/#installation): The minimum required version is `1.2`. Ensure you can execute `poetry -V` and get `1.2`+
+     - Run `poetry install` in the root directory, which will set up a `.venv` folder with a Python virtual environment and also install all Python dependencies
+     - Copy `.env.template` to `.env`
 3. Open the project and start debugging / developing via:
    - VS Code
      1. Open the repository root in VS Code
      2. Install recommended extensions
-     3. Hit F5 (or whatever you have debug mapped to) while you have a contract open (default: playground/hello_world/helloworld.py) and it should start running the `demo.py` file associated with that contract which will build it, deploy it and call it after starting LocalNet.
+     3. Hit F5 (or whatever you have debug mapped to) while you have a contract open (default: `playground/hello_world/helloworld.py`) and it should by default (using the `Demo current contract (+ LocalNet)` configuration) start running the `demo.py`file in the same folder as that contract, which will start LocalNet, build the contract, and deploy the contract to LocalNet.
         > **Note**
         > If using Windows: Before running for the first time you will need to select the Python Interpreter.
-        1. Open the command palette (Ctrl + P)
+        1. Open the command palette (Cmd/Ctrl + Shift + P)
         2. Search for `Python: Select Interpreter`
         3. Select `./.venv/Scripts/python.exe`
    - IDEA (e.g. PyCharm)
@@ -30,7 +30,7 @@ This project has been generated using AlgoKit. See below for default getting sta
    - Other
      1. Open the repository root in your text editor of choice
      2. In a terminal run `poetry shell`
-     3. Run `python -m playground.hello_world.demo` through your debugger of choice
+     3. Run `python playground/hello_world/demo.py` through your debugger of choice
 
 ### Subsequently
 
