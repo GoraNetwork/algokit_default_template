@@ -6,22 +6,21 @@ from playground.hello_world.build import build
 
 
 def demo() -> None:
+    # load Algorand environment variables from playground/.env
+    # this should be pointing at a local sandbox,
     dotenv.load_dotenv()
 
+    # build the app and get back the Path to app spec file
+    app_spec_path = build()
+    # Get sandbox algod client
     algod_client = algokit_utils.get_algod_client()
-
-    # build the app spec
-    app_spec_json = build().read_text()
-    app_spec = algokit_utils.ApplicationSpecification.from_json(app_spec_json)
-
+    # Get default account from sandbox, this will be used as the signer
+    account = algokit_utils.get_sandbox_default_account(algod_client)
     # Create an Application client
     app_client = algokit_utils.ApplicationClient(
-        # Get sandbox algod client
         algod_client=algod_client,
-        # Pass instance of app to client
-        app_spec=app_spec,
-        # Get acct from sandbox and pass the signer
-        signer=algokit_utils.get_sandbox_default_account(algod_client),
+        app_spec=app_spec_path,
+        signer=account,
     )
 
     # Deploy the app on-chain
@@ -34,8 +33,8 @@ def demo() -> None:
     )
 
     # Call the `hello` method
-    call_response = app_client.call(helloworld.hello.method_spec(), {"name": "Beaker"})
-    print(call_response.abi_result.return_value)  # "Hello, Beaker"
+    call_response = app_client.call(helloworld.hello, name="Beaker")
+    print(call_response.return_value)  # "Hello, Beaker"
 
 
 if __name__ == "__main__":

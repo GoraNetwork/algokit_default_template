@@ -1,11 +1,5 @@
 _subdirectory: template_content
 
-# project_name should never get prompted, AlgoKit should always pass it by convention
-project_name:
-    type: str
-    help: Name for this project.
-    placeholder: "algorand-app"
-
 # The following should never get prompted; algokit should always pass these values through by convention
 
 algod_token:
