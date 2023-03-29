@@ -1,8 +1,20 @@
 # {{ project_name }}
 
-This project has been generated using AlgoKit. See below for default getting started instructions.
+This project has been generated using AlgoKit to help you quickly get started with a basic playground for experimenting with Beaker smart contracts against a [LocalNet](https://github.com/algorandfoundation/algokit-cli/blob/main/docs/features/localnet.md) network.
+
+See below for default getting started instructions.
 
 # Setup
+
+## Quick start
+
+1. Ensure you have AlgoKit installed and run `algokit bootstrap all` in this directory
+2. Open this directory in Visual Studio Code
+3. Open the sample contract at `playground/hello_world/helloworld.py`
+4. Hit F5
+5. It will: start LocalNet, build the smart contract, deploy the contract, call the contract.
+
+## Detailed instructions
 
 ### Initial setup
 
@@ -17,7 +29,7 @@ This project has been generated using AlgoKit. See below for default getting sta
    - VS Code
      1. Open the repository root in VS Code
      2. Install recommended extensions
-     3. Hit F5 (or whatever you have debug mapped to) while you have a contract open (default: `playground/hello_world/helloworld.py`) and it should by default (using the `Demo current contract (+ LocalNet)` configuration) start running the `demo.py`file in the same folder as that contract, which will start LocalNet, build the contract, and deploy the contract to LocalNet.
+     3. Hit F5 (or whatever you have debug mapped to) while you have a contract open (default: [`playground/hello_world/helloworld.py`](./playground/hello_world/helloworld.py)) and it should by default (using the `Demo current contract (+ LocalNet)` configuration) start running the `demo.py`file in the same folder as that contract, which will start LocalNet, build the contract, and deploy the contract to LocalNet.
         > **Note**
         > If using Windows: Before running for the first time you will need to select the Python Interpreter.
         1. Open the command palette (Cmd/Ctrl + Shift + P)
@@ -30,14 +42,16 @@ This project has been generated using AlgoKit. See below for default getting sta
    - Other
      1. Open the repository root in your text editor of choice
      2. In a terminal run `poetry shell`
-     3. Run `python playground/hello_world/demo.py` through your debugger of choice
+     3. Run the [demo script](./playground/hello_world/demo.py) `python playground/hello_world/demo.py` through your debugger of choice
 
 ### Subsequently
 
 1. If you update to the latest source code and there are new dependencies you will need to run `algokit bootstrap all` again
 2. Follow step 3 above
 
-### Tools
+## Tools
+
+The following tools are used in this project:
 
 - [Algorand](https://www.algorand.com/) - Layer 1 Blockchain; [Developer portal](https://developer.algorand.org/), [Why Algorand?](https://developer.algorand.org/docs/get-started/basics/why_algorand/)
 - [AlgoKit](https://github.com/algorandfoundation/algokit-cli) - One-stop shop tool for developers building on the Algorand network; [docs](https://github.com/algorandfoundation/algokit-cli/blob/main/docs/algokit.md), [intro tutorial](https://github.com/algorandfoundation/algokit-cli/blob/main/docs/tutorials/intro.md)

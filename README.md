@@ -8,11 +8,10 @@ This is one of the default templates used by AlgoKit to initialise an Algorand s
 
 This template supports the following features:
 
-* Compilation of the current Beaker contract (see e.g. playground/hello_world/build.py)
-* Demo (deploy + call) of the current Beaker contract (see e.g. playground/hello_world/demo.py)
+* Compilation of the current Beaker contract (see e.g. [playground/hello_world/build.py](./playground/hello_world/build.py))
+* Demo (deploy + call) of the current Beaker contract (see e.g. [playground/hello_world/demo.py](./playground/hello_world/demo.py))
 * [Poetry](https://python-poetry.org/) for Python dependency management and virtual environment management
 * VS Code configuration (linting, formatting, breakpoint debugging)
-* dotenv (.env) file for configuration
 
 
 # Getting started

@@ -1,6 +1,7 @@
+# Build the sample contract in this directory using Beaker and output to ./artifacts
 from pathlib import Path
 
-from playground.hello_world import helloworld
+import helloworld
 
 
 def build() -> Path:

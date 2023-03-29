@@ -1,21 +1,17 @@
+# Demonstrate the sample contract in this directory by building, deploying and calling the contract
 import algokit_utils
-import dotenv
 
-from playground.hello_world import helloworld
-from playground.hello_world.build import build
+import helloworld
+from build import build
 
 
 def demo() -> None:
-    # load Algorand environment variables from playground/.env
-    # this should be pointing at a local sandbox,
-    dotenv.load_dotenv()
-
     # build the app and get back the Path to app spec file
     app_spec_path = build()
-    # Get sandbox algod client
-    algod_client = algokit_utils.get_algod_client()
-    # Get default account from sandbox, this will be used as the signer
-    account = algokit_utils.get_sandbox_default_account(algod_client)
+    # Get LocalNet algod client
+    algod_client = algokit_utils.get_algod_client(algokit_utils.AlgoClientConfig("http://localhost:4001", "a" * 64))
+    # Get default account from LocalNet, this will be used as the signer
+    account = algokit_utils.get_localnet_default_account(algod_client)
     # Create an Application client
     app_client = algokit_utils.ApplicationClient(
         algod_client=algod_client,

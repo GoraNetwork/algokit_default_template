@@ -1,3 +1,4 @@
+// VS Code settings to ensure it runs smoothly - https://code.visualstudio.com/docs/getstarted/settings
 {
   // General - see also /.editorconfig
   "files.exclude": {

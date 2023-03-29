@@ -1,3 +1,4 @@
+# Sample Hello World Beaker smart contract - the most basic starting point for an Algorand smart contract
 import beaker
 import pyteal as pt
 

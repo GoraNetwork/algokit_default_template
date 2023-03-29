@@ -1,3 +1,4 @@
+// Run and Debug configurations to allow for 'F5' build and deployment with breakpoint debugging - https://code.visualstudio.com/docs/editor/debugging#_launch-configurations
 {
   "version": "0.2.0",
   "configurations": [
