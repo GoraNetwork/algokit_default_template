@@ -1,9 +1,6 @@
 # Git ignore - https://git-scm.com/docs/gitignore
 
 
-# Since this is a template, lets not commit the lock file
-poetry.lock
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

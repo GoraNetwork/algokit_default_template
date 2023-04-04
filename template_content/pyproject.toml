@@ -12,8 +12,3 @@ python = "^3.10"
 beaker-pyteal = "^1.0.0"
 algokit-utils = "^1.0.1"
 
-
-[tool.ruff]
-ignore = [
-    "T201", # print statements
-]
