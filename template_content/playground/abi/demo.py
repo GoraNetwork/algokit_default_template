@@ -1,4 +1,3 @@
-from algokit_utils import LogicError
 import application
 from beaker import client, sandbox
 
@@ -16,6 +15,9 @@ def main() -> None:
     print(f"{result.method.name} returned {result.return_value}")
 
     result = app_client.call("sum_tuple_elements_with_store_into", t=(123, 456))
+    print(f"{result.method.name} returned {result.return_value}")
+
+    result = app_client.call("sum_dynamic_array", v=[1, 2, 3, 4, 5, 6])
     print(f"{result.method.name} returned {result.return_value}")
 
     result = app_client.call("concat_dynamic_arrays", a=[1, 2, 3], b=[4, 5, 6])

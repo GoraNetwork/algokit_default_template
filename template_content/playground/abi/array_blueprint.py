@@ -11,12 +11,14 @@ def to_u16(i: pt.Expr) -> pt.Expr:
 
 def array_blueprint(app: beaker.Application) -> None:
     @app.external
-    def sum_static_array(
+    def sum_dynamic_array(
         v: pt.abi.DynamicArray[pt.abi.Uint64], *, output: pt.abi.Uint64
     ) -> pt.Expr:
         """sums the array of ints"""
         return pt.Seq(
+            # Use a scratch var to store the running sum
             (running_sum := pt.ScratchVar(pt.TealType.uint64)).store(pt.Int(0)),
+            # Iterate over the elements of the array
             pt.For(
                 (i := pt.ScratchVar()).store(pt.Int(0)),
                 i.load() < v.length(),
@@ -25,6 +27,7 @@ def array_blueprint(app: beaker.Application) -> None:
                 # Access the element with square bracket annotation
                 running_sum.store(running_sum.load() + v[i.load()])
             ),
+            # Set the value we're returning
             output.set(running_sum.load()),
         )
 

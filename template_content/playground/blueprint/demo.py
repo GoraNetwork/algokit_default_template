@@ -1,4 +1,3 @@
-from algokit_utils import LogicError
 import application
 from beaker import client, sandbox
 
