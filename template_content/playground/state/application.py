@@ -11,7 +11,9 @@ class ExampleState:
     # The `static` flag is indicates the value shouldn't change after it's been set.
     declared_global_value = beaker.GlobalStateValue(
         stack_type=pt.TealType.bytes,
-        default=pt.Bytes("A declared state value that is protected with the `static` flag"),
+        default=pt.Bytes(
+            "A declared state value that is protected with the `static` flag"
+        ),
         descr="A static declared value, nothing at the protocol level protects it, "
         "only the methods defined on ApplicationState do",
         static=True,
@@ -44,7 +46,8 @@ class ExampleState:
     reserved_local_value = beaker.ReservedLocalStateValue(
         stack_type=pt.TealType.bytes,
         max_keys=8,
-        descr="A reserved state value, allowing 8 keys to be reserved, " "in this case byte type",
+        descr="A reserved state value, allowing 8 keys to be reserved, "
+        "in this case byte type",
     )
 
     # Similar to `global_blob`, but for local state
@@ -71,7 +74,11 @@ def write_local_blob(v: pt.abi.String) -> pt.Expr:
 
 @app.external
 def read_local_blob(*, output: pt.abi.DynamicBytes) -> pt.Expr:
-    return output.set(app.state.local_blob.read(pt.Int(0), app.state.local_blob.blob.max_bytes - pt.Int(1)))
+    return output.set(
+        app.state.local_blob.read(
+            pt.Int(0), app.state.local_blob.blob.max_bytes - pt.Int(1)
+        )
+    )
 
 
 @app.external
@@ -81,7 +88,11 @@ def write_global_blob(v: pt.abi.String) -> pt.Expr:
 
 @app.external
 def read_global_blob(*, output: pt.abi.DynamicBytes) -> pt.Expr:
-    return output.set(app.state.global_blob.read(pt.Int(0), app.state.global_blob.blob.max_bytes - pt.Int(1)))
+    return output.set(
+        app.state.global_blob.read(
+            pt.Int(0), app.state.global_blob.blob.max_bytes - pt.Int(1)
+        )
+    )
 
 
 @app.external
