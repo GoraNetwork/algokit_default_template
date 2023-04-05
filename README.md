@@ -16,4 +16,4 @@ This template supports the following features:
 
 # Getting started
 
-Once the template is instantiated you can follow the [README.md](template_content/README.md.jinja) file to see instructions for how to use the template.
+Once the template is instantiated you can follow the [README.md](template_content/README.md) file to see instructions for how to use the template.
