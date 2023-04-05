@@ -23,7 +23,7 @@ def calculator(app: beaker.Application) -> None:
     @app.external
     def mul(a: pt.abi.Uint64, b: pt.abi.Uint64, *, output: pt.abi.Uint64) -> pt.Expr:
         """Multiply a and b"""
-        return output.set(a.get() / b.get())
+        return output.set(a.get() * b.get())
 
 
 def add_n(app: beaker.Application, n: int) -> None:
