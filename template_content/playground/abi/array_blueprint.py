@@ -23,7 +23,9 @@ def array_blueprint(app: beaker.Application) -> None:
                 i.store(i.load() + pt.Int(1)),
             ).Do(
                 # Access the element with square bracket annotation
-                running_sum.store(running_sum.load() + v[i.load()])
+                # and call `use` on it to use the value since its a
+                # computed type like tuple elements
+                v[i.load()].use(lambda val: running_sum.store(running_sum.load() + val.get()))
             ),
             # Set the value we're returning
             output.set(running_sum.load()),
