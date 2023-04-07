@@ -9,9 +9,7 @@ def demo() -> None:
     # build the app and get back the Path to app spec file
     app_spec_path = build()
     # Get LocalNet algod client
-    algod_client = algokit_utils.get_algod_client(
-        algokit_utils.AlgoClientConfig("http://localhost:4001", "a" * 64)
-    )
+    algod_client = algokit_utils.get_algod_client(algokit_utils.AlgoClientConfig("http://localhost:4001", "a" * 64))
     # Get default account from LocalNet, this will be used as the signer
     account = algokit_utils.get_localnet_default_account(algod_client)
     # Create an Application client

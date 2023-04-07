@@ -11,9 +11,7 @@ def to_u16(i: pt.Expr) -> pt.Expr:
 
 def array_blueprint(app: beaker.Application) -> None:
     @app.external
-    def sum_dynamic_array(
-        v: pt.abi.DynamicArray[pt.abi.Uint64], *, output: pt.abi.Uint64
-    ) -> pt.Expr:
+    def sum_dynamic_array(v: pt.abi.DynamicArray[pt.abi.Uint64], *, output: pt.abi.Uint64) -> pt.Expr:
         """sums the array of ints"""
         return pt.Seq(
             # Use a scratch var to store the running sum
@@ -85,9 +83,7 @@ def array_blueprint(app: beaker.Application) -> None:
         # from each, and prepend the new length (of elements!) as 2 byte integer
         return pt.Seq(
             # Make a couple bufs for the header (offsets) and elements
-            (_head_buf := pt.ScratchVar()).store(
-                pt.Suffix(pt.Itob(a.length() + b.length()), pt.Int(6))
-            ),
+            (_head_buf := pt.ScratchVar()).store(pt.Suffix(pt.Itob(a.length() + b.length()), pt.Int(6))),
             # Take the element contents of the 2 arrays
             (_tail_buf := pt.ScratchVar()).store(
                 pt.Concat(
@@ -102,15 +98,11 @@ def array_blueprint(app: beaker.Application) -> None:
             # We'll track the current string we're working on here
             (curr_str_len := pt.ScratchVar()).store(pt.Int(0)),
             (cursor := pt.ScratchVar()).store(pt.Int(0)),
-            pt.While(
-                (cursor.load() + curr_str_len.load()) <= pt.Len(_tail_buf.load())
-            ).Do(
+            pt.While((cursor.load() + curr_str_len.load()) <= pt.Len(_tail_buf.load())).Do(
                 # Add the offset for this string to the head buf
                 _head_buf.store(pt.Concat(_head_buf.load(), to_u16(offset.load()))),
                 # Get the length of the current string + 2 bytes for uint16 len
-                curr_str_len.store(
-                    pt.ExtractUint16(_tail_buf.load(), cursor.load()) + pt.Int(2)
-                ),
+                curr_str_len.store(pt.ExtractUint16(_tail_buf.load(), cursor.load()) + pt.Int(2)),
                 # update our cursor to point to the next str element
                 cursor.store(cursor.load() + curr_str_len.load()),
                 # update our offset similarly
