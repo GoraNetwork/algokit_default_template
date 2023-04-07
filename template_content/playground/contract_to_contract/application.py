@@ -24,6 +24,13 @@ def call_other_application(
             app_id=other_application.application_id(),
             method_signature=echo.method_signature(),
             args=[string_to_echo],
+            extra_fields={
+                # Set the fee to 0 so we don't have to
+                # fund the app account. We'll have to cover
+                # the fee ourselves when we call this method
+                # from off chain
+                pt.TxnField.fee: pt.Int(0),
+            }
         ),
         # Set the output to whatever it sent us back
         output.set(pt.Suffix(pt.InnerTxn.last_log(), pt.Int(4))),
