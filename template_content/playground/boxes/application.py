@@ -23,6 +23,16 @@ app = beaker.Application("BoxExample", state=BoxExampleState())
 
 
 @app.external
+def bootstrap() -> pt.Expr:
+    return pt.Seq(
+        app.initialize_global_state(),
+        # create returns a bool value indicating if the box was created
+        # we just pop it here to discard it
+        pt.Pop(app.state.members.create()),
+    )
+
+
+@app.external
 def set_balance(addr: pt.abi.Address, amount: pt.abi.Uint64) -> pt.Expr:
     """Sets the balance of an address"""
     return app.state.balances[addr].set(amount)
@@ -30,7 +40,7 @@ def set_balance(addr: pt.abi.Address, amount: pt.abi.Uint64) -> pt.Expr:
 
 @app.external(read_only=True)
 def read_balance(addr: pt.abi.Address, *, output: pt.abi.Uint64) -> pt.Expr:
-    return output.set(app.state.balances[addr].get())
+    return output.decode(app.state.balances[addr].get())
 
 
 @app.external
@@ -38,8 +48,10 @@ def add_member(addr: pt.abi.Address) -> pt.Expr:
     """Adds a new member to the list"""
     return pt.Seq(
         pt.Assert(app.state.member_count < pt.Int(MAX_MEMBERS), comment="List is full"),
-        app.state.members[app.state.member_count].set(addr.get()),
-        app.state.balances[addr].set(pt.Int(0)),
+        app.state.members[app.state.member_count].set(addr),
+        # Write a zero balance to the balance box
+        # for this address
+        app.state.balances[addr].set(pt.Itob(pt.Int(0))),
         app.state.member_count.increment(),
     )
 
