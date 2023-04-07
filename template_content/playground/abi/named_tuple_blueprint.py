@@ -10,7 +10,9 @@ class StructyTuple(pt.abi.NamedTuple):
 
 def named_tuple_blueprint(app: beaker.Application) -> None:
     @app.external
-    def sum_tuple_elements_with_use(t: StructyTuple, *, output: pt.abi.Uint64) -> pt.Expr:
+    def sum_tuple_elements_with_use(
+        t: StructyTuple, *, output: pt.abi.Uint64
+    ) -> pt.Expr:
         """sum the elements of the tuple with `use` and lambda"""
         return pt.Seq(
             (running_sum := pt.ScratchVar(pt.TealType.uint64)).store(pt.Int(0)),
@@ -22,7 +24,9 @@ def named_tuple_blueprint(app: beaker.Application) -> None:
         )
 
     @app.external
-    def sum_tuple_elements_with_store_into(t: StructyTuple, *, output: pt.abi.Uint64) -> pt.Expr:
+    def sum_tuple_elements_with_store_into(
+        t: StructyTuple, *, output: pt.abi.Uint64
+    ) -> pt.Expr:
         """sum the elements of the tuple with `.set` on matching abi type"""
         return pt.Seq(
             # we can pass the tuple element into a `set` method for the same type

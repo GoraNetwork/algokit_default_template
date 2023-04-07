@@ -5,7 +5,9 @@ from beaker import client, sandbox
 def main() -> None:
     acct = sandbox.get_accounts().pop()
     algod_client = sandbox.get_algod_client()
-    app_client = client.ApplicationClient(algod_client, application.app, signer=acct.signer)
+    app_client = client.ApplicationClient(
+        algod_client, application.app, signer=acct.signer
+    )
     app_id, app_address, _ = app_client.create()
     print(f"Deployed Application ID: {app_id} Address: {app_address}")
 

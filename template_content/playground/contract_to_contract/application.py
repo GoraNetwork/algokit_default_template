@@ -30,7 +30,7 @@ def call_other_application(
                 # the fee ourselves when we call this method
                 # from off chain
                 pt.TxnField.fee: pt.Int(0),
-            }
+            },
         ),
         # Set the output to whatever it sent us back
         output.set(pt.Suffix(pt.InnerTxn.last_log(), pt.Int(4))),
