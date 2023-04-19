@@ -1,0 +1,4 @@
+# Poetry configuration - https://python-poetry.org/docs/configuration/#local-configuration
+[virtualenvs]
+# Ensure we have a .venv folder within this folder when creating a virtual environment
+in-project = true

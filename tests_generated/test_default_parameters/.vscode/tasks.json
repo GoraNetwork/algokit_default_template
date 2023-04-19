@@ -1,0 +1,36 @@
+// Tasks that VS Code can run (Ctrl/Command + Shift + P > Run Task) - https://code.visualstudio.com/docs/editor/tasks
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start AlgoKit LocalNet",
+      "command": "algokit",
+      "args": ["localnet", "start"],
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Stop AlgoKit LocalNet",
+      "command": "algokit",
+      "args": ["localnet", "stop"],
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Reset AlgoKit LocalNet",
+      "command": "algokit",
+      "args": ["localnet", "reset"],
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

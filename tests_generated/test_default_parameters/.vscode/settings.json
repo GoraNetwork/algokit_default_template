@@ -1,0 +1,15 @@
+// VS Code settings to ensure it runs smoothly - https://code.visualstudio.com/docs/getstarted/settings
+{
+  // General - see also /.editorconfig
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/__pycache__": true
+  },
+  // Python
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv",
+  // On Windows, if execution policy is set to Signed (default) then it won't be able to activate the venv
+  //  so instead let's set it to RemoteSigned for VS Code terminal
+  "terminal.integrated.shellArgs.windows": ["-ExecutionPolicy", "RemoteSigned"],
+}

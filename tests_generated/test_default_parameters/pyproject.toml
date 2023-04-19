@@ -1,0 +1,14 @@
+# Python project configuration - https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/
+[tool.poetry]
+name = "playground"
+version = "0.1.0"
+description = "Interactive examples of Algorand examples built with beaker"
+authors = ["MakerX <cto@makerx.com.au>"]
+readme = "README.md"
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+beaker-pyteal = "^1.0.0"
+algokit-utils = "^1.0.1"
+

@@ -1,0 +1,8 @@
+// Recommended VS Code extensions to install to get the best experience - https://code.visualstudio.com/docs/editor/extension-marketplace#_workspace-recommended-extensions
+{
+  "recommendations": [
+    "ms-python.python",
+    "bungcip.better-toml",
+    "editorconfig.editorconfig"
+  ]
+}

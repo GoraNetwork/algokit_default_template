@@ -15,6 +15,7 @@ python-dotenv = "^1.0.0"
 ruff = "*"
 black = {extras = ["d"], version = "*"}
 mypy = "*"
+pytest = "^7.3.1"
 
 [build-system]
 requires = ["poetry-core"]

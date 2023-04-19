@@ -1,0 +1,31 @@
+// Run and Debug configurations to allow for 'F5' build and deployment with breakpoint debugging - https://code.visualstudio.com/docs/editor/debugging#_launch-configurations
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Demo current contract (+ LocalNet)",
+      "type": "python",
+      "request": "launch",
+      "program": "demo.py",
+      "cwd": "${fileDirname}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Start AlgoKit LocalNet"
+    },
+    {
+      "name": "Demo current contract",
+      "type": "python",
+      "request": "launch",
+      "program": "demo.py",
+      "cwd": "${fileDirname}",
+      "console": "integratedTerminal",
+    },
+    {
+      "name": "Build current contract",
+      "type": "python",
+      "request": "launch",
+      "program": "build.py",
+      "cwd": "${fileDirname}",
+      "console": "integratedTerminal",
+    }
+  ]
+}
