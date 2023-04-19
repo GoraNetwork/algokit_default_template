@@ -13,6 +13,7 @@ jobs:
     uses: ./.github/workflows/check-python.yaml
 
   tag-release:
+    needs: ci-check-python
     runs-on: "ubuntu-latest"
     steps:
       - name: Checkout source code
