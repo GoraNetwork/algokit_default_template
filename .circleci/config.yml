@@ -1,0 +1,33 @@
+version: 2.1
+jobs:
+  test:
+    parallelism: 5
+    machine:
+      image: ubuntu-2004:202201-02
+      docker_layer_caching: true
+    steps:
+      - checkout
+      - run:
+          name: install
+          command: yarn
+      - run:
+          name: Jest 
+          command: |
+            TESTFILES=$(circleci tests glob "test/**/*.e2e.ts" | circleci tests split --split-by=timings)
+            docker run -v $PWD:$PWD -w $PWD -v /var/run/docker.sock:/var/run/docker.sock -it $(docker build -q .) test:ci $TESTFILES
+      - store_test_results:
+          path: test_results
+      - store_artifacts:
+          path: test_results
+          destination: test_results
+    resource_class: medium
+
+workflows:
+  test_workflow:
+    jobs:
+      - hold:
+          type: approval
+      - test:
+          requires:
+            - hold
+      

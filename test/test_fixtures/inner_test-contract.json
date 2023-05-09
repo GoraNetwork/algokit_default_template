@@ -1,0 +1,45 @@
+{
+    "name": "inner_test",
+    "networks": {
+      "default": {
+        "appID": 1
+      }
+    },
+    "methods": [
+      {
+        "name": "make_inner_request",
+        "desc": "allows us to make a test request from a smart contract to test Node runner parsing of nested inner transactions",
+        "args": [
+          { "name": "depth", "type": "uint64" },
+          { "name": "request_args", "type": "byte[]", "desc": "includes a formated url, path args"},
+          { "name": "destination", "type": "byte[]", "desc": "includes app ID and method signature"},
+          { "name": "type", "type": "uint64", "desc": "request type"},
+          { "name": "goracle_main", "type": "application", "desc": "goracle main reference"},
+          { "name": "child0", "type": "application", "desc": ""},
+          { "name": "child1", "type": "application", "desc": ""},
+          { "name": "child2", "type": "application", "desc": ""},
+          { "name": "child3", "type": "application", "desc": ""},
+          { "name": "child4", "type": "application", "desc": ""},
+          { "name": "child5", "type": "application", "desc": ""}
+        ],
+        "returns": { "type": "void" }
+      },
+      {
+        "name": "opt_in_gora",
+        "desc": "opts contract into gora main contract and token",
+        "args": [
+          { "name": "asset_id", "type": "asset"},
+          { "name": "app_id", "type": "application"}
+        ],
+        "returns": { "type": "void" }
+      },
+      {
+        "name": "set_child",
+        "desc": "opts contract into gora main contract and token",
+        "args": [
+          { "name": "child_id", "type": "uint64"}
+        ],
+        "returns": { "type": "void" }
+      }
+    ]
+  }

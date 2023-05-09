@@ -1,0 +1,27 @@
+{
+  "name": "GameDataContract",
+  "networks": {
+    "default": {
+      "appID": 1
+    }
+  },
+  "methods": [
+    {
+      "name": "input_data",
+      "desc": "takes current currency info from verified subscriber and stores it as global data",
+      "args": [
+        { "name": "currency_id_key", "type": "string" },
+        { "name": "currency_symbol_key", "type": "string" },
+        { "name": "currency_name_key", "type": "string" },
+        { "name": "current_price_key", "type": "uint64" },
+        { "name": "market_cap_key", "type": "uint64" },
+        { "name": "high_24h_key", "type": "uint64" },
+        { "name": "low_24h_key", "type": "uint64" },
+        { "name": "price_change_24h_key", "type": "ufixed64x2" },
+        { "name": "last_updated_key", "type": "string" },
+        { "name": "main_app", "type": "application" }
+      ],
+      "returns": { "type": "void" }
+    }
+  ]
+}
