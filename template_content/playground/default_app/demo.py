@@ -1,7 +1,7 @@
 # Demonstrate the sample contract in this directory by building, deploying and calling the contract
 import algokit_utils
 
-import helloworld
+import default_app
 from build import build
 
 
@@ -31,7 +31,7 @@ def demo() -> None:
     )
 
     # Call the `hello` method
-    call_response = app_client.call(helloworld.hello, name="Beaker")
+    call_response = app_client.call(default_app.hello, name="Beaker")
     print(call_response.return_value)  # "Hello, Beaker"
 
 
