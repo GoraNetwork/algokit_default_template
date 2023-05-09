@@ -1,0 +1,22 @@
+{
+  "name": "GoracleVoting",
+  "networks": {
+    "default": {
+      "appID": 1
+    }
+  },
+  "methods": [
+    {
+      "name": "vote",
+      "desc": "Submit vote for block",
+      "args": [
+        { "name": "destination_app", "type": "application"},
+        { "name": "destination_method", "type": "byte[]"},
+        { "name": "requester", "type": "account"},
+        { "name": "response_type", "type": "uint32"},
+        { "name": "response_body", "type": "byte[]"}
+      ],
+      "returns": { "type": "void" }
+    }
+  ]
+}
