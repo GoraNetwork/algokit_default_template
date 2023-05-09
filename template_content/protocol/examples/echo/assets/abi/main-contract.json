@@ -1,0 +1,31 @@
+{
+  "name": "AlgoracleRequest",
+  "networks": {
+    "default": {
+      "appID": 1
+    }
+  },
+  "methods": [
+    {
+      "name": "request",
+      "desc": "Request an oracle response",
+      "args": [
+        { "name": "request_args", "type": "byte[]", "desc": "includes a formated url, path args"},
+        { "name": "destination", "type": "byte[]", "desc": "includes app ID and method signature"},
+        { "name": "type", "type": "uint64", "desc": "request type"}
+      ],
+      "returns": { "type": "void" }
+    },
+    {
+      "name": "subscribe",
+      "desc": "Request an oracle subscription response",
+      "args": [
+        { "name": "request_args", "type": "byte[]", "desc": "includes a formated type, url, path args"}, 
+        { "name": "destination", "type": "byte[]", "desc": "includes app ID and method signature"},
+        { "name": "subscription_args", "type": "byte[]", "desc": "includes intervals in seconds, number of executions"},
+        { "name": "type", "type": "uint64", "desc": "request type"}
+      ],
+      "returns": { "type": "void" }
+    }
+  ]
+}

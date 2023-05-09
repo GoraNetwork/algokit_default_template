@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pyteal = ">=0.18.1"
+pyyaml = "*"
+pycryptodome = "*"
+typing = "*"
+beaker-pyteal = "==1.0.0"
+
+[dev-packages]
+scipy = "*"
+
+[requires]
+python_version = "3.10"
