@@ -1,9 +1,9 @@
 # Python project configuration - https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/
 [tool.poetry]
-name = "playground"
+name = "goracle"
 version = "0.1.0"
-description = "Interactive examples of Algorand examples built with beaker"
-authors = ["MakerX <cto@makerx.com.au>"]
+description = "Default basic app to interact with the Goracle protocol"
+authors = ["Jesse <https://github.com/TonyIommiSG>"]
 readme = "README.md"
 license = "MIT"
 
@@ -11,4 +11,6 @@ license = "MIT"
 python = "^3.10"
 beaker-pyteal = "^1.0.0"
 algokit-utils = "^1.0.1"
-
+typing = "*"
+pyyaml = "*"
+scipy = "*"

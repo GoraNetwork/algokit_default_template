@@ -1,15 +1,15 @@
-# AlgoKit Playground Template
+# AlgoKit Goracle Basic App Template
 
-This template provides a good starting point to quickly play with writing, building and deploying/calling Beaker and PyTEAL contracts.
+This template provides a good starting point to quickly play with writing, building and deploying/calling Beaker and PyTEAL contracts and interacting with the Goracle Protocol.
 
-This is one of the default templates used by AlgoKit to initialise an Algorand smart contract project. It's a [Copier template](https://copier.readthedocs.io/en/stable/).
+This is a template used by AlgoKit to initialise an Algorand smart contract project. It's a [Copier template](https://copier.readthedocs.io/en/stable/).
 
 ## Features
 
 This template supports the following features:
 
-* Compilation of the current Beaker contract (see e.g. [playground/hello_world/build.py](./playground/hello_world/build.py))
-* Demo (deploy + call) of the current Beaker contract (see e.g. [playground/hello_world/demo.py](./playground/hello_world/demo.py))
+* Compilation of the current Beaker contract (see e.g. [default_app/build.py](./default_app/build.py))
+* Demo (deploy + call) of the current Beaker contract (see e.g. [default_app/demo.py](./default_app/demo.py))
 * [Poetry](https://python-poetry.org/) for Python dependency management and virtual environment management
 * VS Code configuration (linting, formatting, breakpoint debugging)
 

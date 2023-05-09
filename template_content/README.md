@@ -1,6 +1,6 @@
 # Playground 
 
-This project has been generated using AlgoKit to help you quickly get started with a basic playground for experimenting with Beaker smart contracts against a [LocalNet](https://github.com/algorandfoundation/algokit-cli/blob/main/docs/features/localnet.md) network.
+This project has been generated using AlgoKit to help you quickly get started with a basic app to interact with the Goracle protocol and for experimenting with Beaker smart contracts against a [LocalNet](https://github.com/algorandfoundation/algokit-cli/blob/main/docs/features/localnet.md) network.
 
 See below for default getting started instructions.
 
@@ -10,7 +10,7 @@ See below for default getting started instructions.
 
 1. Ensure you have AlgoKit installed and run `algokit bootstrap all` in this directory
 2. Open this directory in Visual Studio Code
-3. Open the sample contract at `playground/hello_world/helloworld.py`
+3. Open the sample contract at `default_app/default_app.py`
 4. Hit F5
 5. It will: start LocalNet, build the smart contract, deploy the contract, call the contract.
 
@@ -29,7 +29,7 @@ See below for default getting started instructions.
    - VS Code
      1. Open the repository root in VS Code
      2. Install recommended extensions
-     3. Hit F5 (or whatever you have debug mapped to) while you have a contract open (default: [`playground/hello_world/helloworld.py`](./playground/hello_world/helloworld.py)) and it should by default (using the `Demo current contract (+ LocalNet)` configuration) start running the `demo.py`file in the same folder as that contract, which will start LocalNet, build the contract, and deploy the contract to LocalNet.
+     3. Hit F5 (or whatever you have debug mapped to) while you have a contract open (default: [`default_app/default_app.py`](./default_app/default_app.py)) and it should by default (using the `Demo current contract (+ LocalNet)` configuration) start running the `demo.py`file in the same folder as that contract, which will start LocalNet, build the contract, and deploy the contract to LocalNet.
         > **Note**
         > If using Windows: Before running for the first time you will need to select the Python Interpreter.
         1. Open the command palette (Cmd/Ctrl + Shift + P)
@@ -42,7 +42,7 @@ See below for default getting started instructions.
    - Other
      1. Open the repository root in your text editor of choice
      2. In a terminal run `poetry shell`
-     3. Run the [demo script](./playground/hello_world/demo.py) `python playground/hello_world/demo.py` through your debugger of choice
+     3. Run the [demo script](./default_app/demo.py) `python default_app/demo.py` through your debugger of choice
 
 ### Subsequently
 
