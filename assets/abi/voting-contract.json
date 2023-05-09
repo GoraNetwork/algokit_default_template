@@ -1,0 +1,69 @@
+{
+  "name": "GoracleVoting",
+  "networks": {
+    "default": {
+      "appID": 1
+    }
+  },
+  "methods": [
+    {
+      "name": "vote",
+      "desc": "Submit vote for block",
+      "args": [
+        { "name": "vrf_result", "type": "byte[64]" },
+        { "name": "vrf_proof", "type": "byte[80]" },
+        { "name": "staking_app", "type": "application" },
+        { "name": "destination_app", "type": "application" },
+        { "name": "destination_method", "type": "byte[]" },
+        { "name": "requester", "type": "account" },
+        { "name": "ip", "type": "byte[4]" },
+        { "name": "port", "type": "uint64" },
+        { "name": "network", "type": "uint64" },
+        { "name": "primary_account", "type": "account" },
+        { "name": "response_type", "type": "uint32" },
+        { "name": "response_body", "type": "byte[]" },
+        { "name": "vote_count", "type": "uint64" },
+        { "name": "z_index", "type": "uint64" },
+        { "name": "lsig", "type": "appl" }
+      ],
+      "returns": { "type": "void" }
+    },
+    {
+      "name": "delete_box",
+      "desc": "Method for user to delete their old box",
+      "args": [
+        { "name": "vote_hash", "type": "byte[32]" }
+      ],
+      "returns": { "type": "void" }
+    },
+    {
+      "name": "reset_previous_vote",
+      "desc": "Method to manually reset a previous vote",
+      "args": [
+        { "name": "primary_account", "type": "account" },
+        { "name": "rewards_address", "type": "account" },
+        { "name": "main_contract", "type": "application" }
+      ],
+      "returns": { "type": "void" }
+    },
+    {
+      "name": "register_voter",
+      "desc": "registers participation account to store previous vote",
+      "args": [
+        { "name": "box_payment", "type": "pay"},
+        { "name": "primary_account", "type": "account" },
+        { "name": "main_contract", "type": "application" }
+      ],
+      "returns": { "type": "void" }
+    },
+    {
+      "name": "deregister_voter",
+      "desc": "deregisters participation account to store previous vote",
+      "args": [
+        { "name": "primary_account", "type": "account" },
+        { "name": "main_contract", "type": "application" }
+      ],
+      "returns": { "type": "void" }
+    }
+  ]
+}
