@@ -17,6 +17,11 @@ algod_port:
     help: Default Algod port
     default: 4001
 
+kmd_port:
+    type: int
+    help: Default KMD port
+    default: 4002
+
 indexer_token:
     type: str
     help: Default Indexer token
@@ -31,3 +36,8 @@ indexer_port:
     type: int
     help: Default Indexer port
     default: 8980
+
+goracle_abi_path:
+    type: str
+    help: Path To GORA ABI JSON
+    default: "${PWD}/protocol/assets/abi"
