@@ -96,17 +96,22 @@ describe("Stake Delegator Tests", () => {
     sandboxAccount = (await bkr.sandbox.getAccounts()).pop()!;
     if (sandboxAccount === undefined) return;
 
-    await compileBeaker("assets/default_consumer/default_consumer.py", {MAIN_APP_ADDRESS: MainAddress, MAIN_APP_ID: mainAppId});
-    const program = JSON.parse(fs.readFileSync("./assets/default_consumer/artifacts/application.json", "utf-8"));
+    await compileBeaker("assets/default_consumer/default_consumer.py", {MAIN_APP_ID: mainAppId});
+
+    const program = await JSON.parse(fs.readFileSync("./assets/default_consumer/artifacts/application.json", "utf-8"));
     approvalProgram = program.source.approval;
     clearProgram = program.source.clear;
+
     // Create a new client that will talk to our app
     // Including a signer lets it worry about signing
     // the app call transactions 
     DefaultConsumerClient = getDefaultConsumerClient({addr: sandboxAccount.addr, sk: sandboxAccount.privateKey});
     suggestedParams = await DefaultConsumerClient.getSuggestedParams();
+    // Had to overwrite the approvalProgram in the client as it wasn't being overwritten with the txParams in createApplication()
+    DefaultConsumerClient.approvalProgram = approvalProgram;
+    DefaultConsumerClient.clearProgram = clearProgram;
 
-    const appCreateResult = await DefaultConsumerClient.createApplication({appApprovalProgram: approvalProgram, appClearProgram: clearProgram});
+    const appCreateResult = await DefaultConsumerClient.createApplication();
     appAddress = appCreateResult.appAddress;
     appId = appCreateResult.appId;
 
