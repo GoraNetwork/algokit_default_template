@@ -14,7 +14,7 @@ def build(MAIN_APP_ID) -> Path:
     default_app.MAIN_APP_ADDRESS = Bytes(algosdk.encoding.decode_address(algosdk.logic.get_application_address(MAIN_APP_ID)))
 
     output_dir = Path(__file__).parent / "artifacts"
-    app.build(sandbox.get_algod_client()).export(output_dir)
+    app.build(localnet.get_algod_client()).export(output_dir)
 
     print(f"Dumping {app.name} to {output_dir}")
     
