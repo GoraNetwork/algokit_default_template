@@ -171,3 +171,4 @@ node_modules
 
 test_output/
 template_content/poetry.lock
+**/artifacts/*

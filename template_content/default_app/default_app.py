@@ -1,13 +1,22 @@
-from typing import Final, Literal as L
-import sys
-sys.path.append('.')
-import pyteal
+from typing import Literal as L
 import beaker
-from protocol.assets.default_consumer.abi_structures import *
-from protocol.assets.default_consumer.key_map import key_map
+import os
+import sys
+import yaml
+import algosdk
+from dotenv import load_dotenv
+load_dotenv()
+
+path = os.getcwd()
+parent = os.path.dirname(path)
+sys.path.append(parent)
+protocol_filepath = path + "/protocol"
+sys.path.append(".")
+
+from abi_structures import *
+from key_map import key_map
 from protocol.assets.helpers.key_map import key_map as protocol_key_map
-from protocol.utils.gora_pyteal_utils import *
-from protocol.utils.gora_pyteal_utils import opt_in as gora_opt_in
+from protocol.utils.gora_pyteal_utils import opt_in as gora_opt_in,get_method_signature,opt_in_asset
 from protocol.utils.abi_types import *
 
 KEYMAP = key_map['consumer']
@@ -21,7 +30,7 @@ RSKEYMAP = protocol_key_map['request_status']
 MAIN_APP_ID = Int(0)
 MAIN_APP_ADDRESS = Bytes("")
 
-app = beaker.Application("DefaultConsumerApp",build_options=beaker.BuildOptions(avm_version=8))
+app = beaker.Application("DefaultApp",build_options=beaker.BuildOptions(avm_version=8))
 
 @app.opt_in
 def opt_in():
@@ -64,16 +73,13 @@ def verify_app_call():
         Assert(current_request_info_bytes.hasValue()),
         (current_request_info := abi.make(RequestInfo)).decode(current_request_info_bytes.value()),
         current_request_info.request_status.store_into(request_status := abi.make(abi.Uint8)),
+        vote_app_creator,
+        voting_contract_creator,
         Assert(
             # TODO: is request_status necessary? If so, we will need to reorder the innerTxn in voting contract
             # request_status.get() == RSKEYMAP["completed"],
-            Seq(
-                vote_app_creator,
-                voting_contract_creator,
-                # TODO: not sure why this isn't passing
-                # vote_app_creator.value() == MAIN_APP_ADDRESS,
-                vote_app_creator.value() == voting_contract_creator.value()
-            ),
+            vote_app_creator.value() == MAIN_APP_ADDRESS,
+            vote_app_creator.value() == voting_contract_creator.value(),
             Txn.application_id() == Global.current_application_id(),
         )
     )
@@ -114,8 +120,8 @@ def send_request(
 ):
     
     return Seq(
-        # TODO: modified gora_pyteal_utils make_request, didn't want to modify original since others were using it, but can do later or in this branch
         # request_args
+        Assert(MAIN_APP_ID == Txn.applications[1]),
         (request_tuple := abi.make(RequestSpec)).set(
             source_arr,
             agg_method,
@@ -150,10 +156,9 @@ def send_request(
         # box_refs
         (price_box := abi.make(BoxType)).set(box_name,current_app_id),
         (box_refs := abi.make(abi.DynamicArray[BoxType])).set([price_box]),
-
         InnerTxnBuilder.Begin(),
         InnerTxnBuilder.MethodCall(
-            app_id= Txn.applications[1],
+            app_id= MAIN_APP_ID,
             method_signature=get_method_signature("request","main"),
             args=[
                 request_tuple.encode(),
@@ -179,3 +184,9 @@ def opt_in_gora(
         opt_in_asset(Txn.assets[0]),
         gora_opt_in(Txn.applications[1])
     )
+
+if __name__ == "__main__":
+    params = yaml.safe_load(sys.argv[1])
+    MAIN_APP_ID = Int(params['MAIN_APP_ID'])
+    MAIN_APP_ADDRESS = Bytes(algosdk.encoding.decode_address(algosdk.logic.get_application_address(params['MAIN_APP_ID'])))
+    app_spec = app.build(client=beaker.sandbox.get_algod_client()).export(path + "/default_app/artifacts/")
