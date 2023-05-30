@@ -6,8 +6,11 @@
       "name": "Demo current contract (+ LocalNet)",
       "type": "python",
       "request": "launch",
-      "program": "demo.py",
-      "cwd": "${fileDirname}",
+      "program": "default_app/demo.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "GORACLE_ABI_PATH":"${workspaceFolder}/protocol/assets/abi"
+      },
       "console": "integratedTerminal",
       "preLaunchTask": "Start AlgoKit LocalNet"
     },

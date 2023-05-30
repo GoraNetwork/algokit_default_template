@@ -32,13 +32,7 @@ from algosdk.logic import *
 from algokit_utils import ApplicationClient,Account
 from algosdk.v2client.algod import AlgodClient
 
-ALGOD_CLIENT = algokit_utils.get_algod_client(
-        algokit_utils.AlgoClientConfig(
-            os.environ['ALGOD_SERVER'] + ":" +
-            os.environ['ALGOD_PORT'],
-            os.environ['ALGOD_TOKEN']
-        )
-    )
+ALGOD_CLIENT = algokit_utils.get_algod_client()
 
 class Main_Contract():
     def __init__(

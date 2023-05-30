@@ -7,7 +7,7 @@ import base64
 from pathlib import Path
 from algosdk import atomic_transaction_composer as atc, abi,encoding
 from algosdk.transaction import LogicSigAccount
-from algosdk.logic import get_application_address
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -28,6 +28,7 @@ def demo() -> None:
 
     # import algod with localnet params
     client = ALGOD_CLIENT
+    print(client.versions())
 
     # get suggested params
     suggested_params = client.suggested_params()
@@ -102,13 +103,6 @@ def demo() -> None:
     app_spec_path_str = path + "/default_app/artifacts/application.json"
     app_spec_path = Path(app_spec_path_str)
     build(main_app.id)
-
-    # default_app_client = bkr.client.ApplicationClient(
-    #     client=client, # TODO: look into why bkr.localnet isn't like in demos
-    #     app=app_spec_path, # TODO: doesn't work with str path
-    #     signer=owner
-    # )
-    # TODO see if any difference between these two methods
 
     default_app_client = algokit_utils.ApplicationClient(
         algod_client=ALGOD_CLIENT,
