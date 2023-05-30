@@ -6,8 +6,8 @@ export async function deployGora(deployer: Account){
     assetName: "GORA",
     unitName: "GORA",
     assetURL: "goracle.io",
-    decimals: 6,
-    total: BigInt(1e16),
+    decimals: 9,
+    total: BigInt(1e17), // 1e8 * 1e9
     assetMetadataHash: "",
     defaultFrozen: false
   });

@@ -354,6 +354,9 @@ def stake_token(goracle_main_app_address, goracle_main_app_id, gora_token_id, am
             args=[
                 asset_transfer,
             ],
+            extra_fields={
+                TxnField.fee : Int(4000),
+            }
         ),
         InnerTxnBuilder.Submit(),
     ])
@@ -375,121 +378,14 @@ def unstake_token(goracle_main_app_id, gora_token_id, amount_to_unstake):
                 amount_to_unstake,
                 gora_token_id
             ],
+            extra_fields={
+                TxnField.fee : Int(2000),
+            }
         ),
         InnerTxnBuilder.Submit(),
     ])
 
 
-"""
-goracle_main_app_address: pyteal.Bytes
-new_key: pyteal.Bytes
-"""
-@Subroutine(TealType.none)
-def register_key(goracle_main_app_id, new_key):
-
-    return Seq([
-        InnerTxnBuilder.Begin(),
-        InnerTxnBuilder.MethodCall(
-            app_id=goracle_main_app_id,
-            method_signature=get_method_signature("register_participation_account","main"),
-            args=[
-                new_key,
-            ],
-        ),
-        InnerTxnBuilder.Submit(),
-    ])
-
-"""
-goracle_main_app_address: pyteal.Bytes
-goracle_main_app_id: pyteal.Int
-gora_token_id: pyteal.Int
-amount_to_deposit: pyteal.Int
-account_to_deposit_to: pyteal.Bytes
-"""
-@Subroutine(TealType.none)
-def withdraw_token(goracle_main_app_id, gora_token_id, amount_to_withdraw):
-    return Seq([
-        InnerTxnBuilder.Begin(),
-        InnerTxnBuilder.MethodCall(
-            app_id=goracle_main_app_id,
-            method_signature=get_method_signature("withdraw_token","main"),
-            args=[
-                amount_to_withdraw,
-                gora_token_id,
-            ],
-        ),
-        InnerTxnBuilder.Submit(),
-    ])
-
-"""
-goracle_main_app_address: pyteal.Bytes
-goracle_main_app_id: pyteal.Int
-amount_to_deposit: pyteal.Int
-account_to_deposit_to: pyteal.Bytes
-"""
-@Subroutine(TealType.none)
-def withdraw_algo(goracle_main_app_id, amount_to_withdraw):
-
-    return Seq([
-        InnerTxnBuilder.Begin(),
-        InnerTxnBuilder.MethodCall(
-            app_id=goracle_main_app_id,
-            method_signature=get_method_signature("withdraw_algo","main"),
-            args=[
-                amount_to_withdraw
-            ],
-        ),
-        InnerTxnBuilder.Submit(),
-    ])
-
-'''
-goracle_main_app_address: pyteal.Bytes
-goracle_main_app_id: pyteal.Int
-gora_token_id: pyteal.Int
-amount_to_stake: pyteal.Int
-'''
-@Subroutine(TealType.none)
-def stake_token(goracle_main_app_address, goracle_main_app_id, gora_token_id, amount_to_stake):
-    asset_transfer = \
-    {
-        TxnField.type_enum: TxnType.AssetTransfer,
-        TxnField.asset_amount: amount_to_stake,
-        TxnField.xfer_asset: gora_token_id,
-        TxnField.asset_receiver: goracle_main_app_address
-    }
-
-    return Seq([
-        InnerTxnBuilder.Begin(),
-        InnerTxnBuilder.MethodCall(
-            app_id=goracle_main_app_id,
-            method_signature=get_method_signature('stake', 'main'),
-            args=[
-                asset_transfer,
-            ],
-        ),
-        InnerTxnBuilder.Submit(),
-    ])
-
-'''
-goracle_main_app_id: pyteal.Int
-gora_token_id: pyteal.Int
-amount_to_stake: pyteal.Int
-'''
-@Subroutine(TealType.none)
-def unstake_token(goracle_main_app_id, gora_token_id, amount_to_unstake):
-
-    return Seq([
-        InnerTxnBuilder.Begin(),
-        InnerTxnBuilder.MethodCall(
-            app_id=goracle_main_app_id,
-            method_signature=get_method_signature('unstake', 'main'),
-            args=[
-                amount_to_unstake,
-                gora_token_id
-            ],
-        ),
-        InnerTxnBuilder.Submit(),
-    ])
 """
 Assert with a number to indentify it in API error message. The message will be:
 "shr arg too big, (%d)" where in "%d" 6 lowest decinals are the line number and

@@ -62,7 +62,6 @@ describe("Deploy Voting Contracts e2e", () => {
   let voteVerifyLsig: LogicSigAccount;
   let user: Account;
   let current_request_round: any;
-  let network: number;
   // TODO: parameterize and pass into main contract deployment
   let VOTE_REFILL_THRESHOLD: number;
   let VOTE_REFILL_AMOUNT: number;
@@ -76,7 +75,7 @@ describe("Deploy Voting Contracts e2e", () => {
 
     testState = await beforeEachVotingTest(accountGenerator);
     // flatten the testState object
-    ({ current_request_round, votingAppId, mainAppId, destinationAppId, algodClient, voteVerifyLsig, user, network, TIME_LOCK, VOTE_REFILL_AMOUNT, VOTE_REFILL_THRESHOLD, requestBoxCost } = testState);
+    ({ current_request_round, votingAppId, mainAppId, destinationAppId, algodClient, voteVerifyLsig, user, TIME_LOCK, VOTE_REFILL_AMOUNT, VOTE_REFILL_THRESHOLD, requestBoxCost } = testState);
   });
 
   it("should count votes according to binomial CDF", async () => {
@@ -130,7 +129,6 @@ describe("Deploy Voting Contracts e2e", () => {
       voteVerifyLsig,
       methodSelector: consumerMethod,
       requestRound: testState.request_map.get(requester.addr),
-      network,
       mockSeed: seed,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -186,7 +184,6 @@ describe("Deploy Voting Contracts e2e", () => {
       requesterAddress: voter.addr,
       primaryAccount: voter.addr,
       methodSelector: consumerMethod,
-      network: network,
       voteVerifyLsig,
       requestRound,
       timelock: TIME_LOCK,
@@ -230,7 +227,6 @@ describe("Deploy Voting Contracts e2e", () => {
         primaryAccount: voter.addr,
         methodSelector: consumerMethod,
         requestRound: current_request_round,
-        network:network,
         voteVerifyLsig,
         timelock: TIME_LOCK,
         request_key_hash: key_hash
@@ -306,6 +302,12 @@ describe("Deploy Voting Contracts e2e", () => {
       flatFee: true,
       fee: 3000
     };
+
+    // Deploying vote, contract, we fund it this amount to account for:
+    // min balance increase of main for creating app,
+    // funding vote contract with a min balance and refill amount
+    await fundAccount(getApplicationAddress(mainAppId), 12855000);
+
     const deployVoteContractGroup = deployVoteContract({
       staker: user,
       appID: mainAppId,
@@ -342,7 +344,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: voter.addr,
       methodSelector: consumerMethod,
       requestRound: current_request_round,
-      network:network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -360,7 +361,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: voter2.addr,
       methodSelector: consumerMethod,
       requestRound: current_request_round,
-      network:network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -398,7 +398,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: voter.addr,
       methodSelector: consumerMethod,
       requestRound: current_request_round,
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -440,7 +439,6 @@ describe("Deploy Voting Contracts e2e", () => {
       requesterAddress: adversary.addr,
       primaryAccount: adversary.addr,
       methodSelector: consumerMethod,
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash : key_hash
@@ -495,7 +493,6 @@ describe("Deploy Voting Contracts e2e", () => {
       requestRound: current_request_round,
       primaryAccount: closeoutVoter.addr,
       methodSelector: consumerMethod,
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -512,7 +509,6 @@ describe("Deploy Voting Contracts e2e", () => {
       requestRound: current_request_round,
       primaryAccount: closeoutVoter.addr,
       methodSelector: consumerMethod,
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -565,7 +561,6 @@ describe("Deploy Voting Contracts e2e", () => {
         requestRound: current_request_round,
         primaryAccount: voters[i].addr,
         methodSelector: consumerMethod,
-        network: network,
         voteVerifyLsig,
         timelock: TIME_LOCK,
         request_key_hash: key_hash
@@ -585,7 +580,6 @@ describe("Deploy Voting Contracts e2e", () => {
       requestRound: current_request_round,
       primaryAccount: clearStateVoter.addr,
       methodSelector: consumerMethod,
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -631,7 +625,6 @@ describe("Deploy Voting Contracts e2e", () => {
       requesterAddress: voter.addr,
       primaryAccount: voter.addr,
       methodSelector: consumerMethod,
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -677,7 +670,6 @@ describe("Deploy Voting Contracts e2e", () => {
       requesterAddress: voter.addr,
       primaryAccount: voter.addr,
       methodSelector: consumerMethod,
-      network: network,
       voteVerifyLsig,
       vrfResult,
       vrfProof,
@@ -720,7 +712,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: voters[2].addr,
       methodSelector: consumerMethod,
       requestRound: testState.request_map.get(voters[0].addr),
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       mockLease: new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
@@ -740,7 +731,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: voters[2].addr,
       methodSelector: consumerMethod,
       requestRound: testState.request_map.get(voters[0].addr),
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       mockParams: suggestedParams,
@@ -761,7 +751,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: voters[2].addr,
       methodSelector: consumerMethod,
       requestRound: testState.request_map.get(voters[0].addr),
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       mockParams: suggestedParams,
@@ -780,7 +769,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: voters[2].addr,
       methodSelector: consumerMethod,
       requestRound: testState.request_map.get(voters[0].addr),
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -798,7 +786,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: voters[2].addr,
       methodSelector: consumerMethod,
       requestRound: testState.request_map.get(voters[0].addr),
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -820,7 +807,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: voters[2].addr,
       methodSelector: consumerMethod,
       requestRound: testState.request_map.get(voters[0].addr),
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -842,7 +828,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: voters[2].addr,
       methodSelector: consumerMethod,
       requestRound: testState.request_map.get(voters[0].addr),
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -899,7 +884,6 @@ describe("Deploy Voting Contracts e2e", () => {
       voteVerifyLsig,
       methodSelector: consumerMethod,
       requestRound: testState.request_map.get(requester.addr),
-      network,
       mockSeed: seed,
       timelock: TIME_LOCK,
       request_key_hash: key_hash

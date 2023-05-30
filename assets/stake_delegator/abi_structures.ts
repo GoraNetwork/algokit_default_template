@@ -12,6 +12,8 @@ export const VestingTracker = new ABITupleType([
 export const RewardsTracker = new ABITupleType([
   new ABIUintType(64), // algo_rewards
   new ABIUintType(64), // gora_rewards
+  new ABIUintType(64), // algo_nonstake
+  new ABIUintType(64), // gora_nonstake
 ]);
 
 export const Aggregation = new ABITupleType([

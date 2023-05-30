@@ -2,7 +2,8 @@ import util from "util";
 import{
   Algodv2,
   Account,
-  SuggestedParams
+  SuggestedParams,
+  getApplicationAddress
 } from "algosdk";
 import {
   parseAppState
@@ -96,6 +97,9 @@ describe("request e2e", () => {
     const [url, path, appID, signature, interval, num_execs] = make_generic_args();
     const [request_args, destination] = encode_args(url, path, appID, signature, interval, num_execs);
 
+    // fund main contract
+    await fundAccount(getApplicationAddress(appId), 101_000); // To account for opting in and the cost of the opt in txn
+
     const initGroup = init(
       {
         platformTokenAssetId: platformTokenAssetId,
@@ -120,7 +124,7 @@ describe("request e2e", () => {
 
     await depositAlgoGroup.execute(algodClient, 5);
 
-    const goraDepositAmount = 500_000_000;
+    const goraDepositAmount = 500_000_000_000;
 
     const depositTokenGroup = depositToken(
       {
@@ -159,7 +163,7 @@ describe("request e2e", () => {
 
     const appInfo = await algodClient.getApplicationByID(appId).do();
     const globalState = parseAppState(appInfo.params["global-state"]);
-    expect(globalState["af"]).toEqual(globalStateMain.algo_request_fee);
+    expect(globalState["af"]).toEqual(globalStateMain.algo_request_fee-1001); // Subtract the vote_refill_refund
     expect(globalState["tf"]).toEqual(globalStateMain.gora_request_fee);
 
     const requestGroup2 = request(
@@ -201,6 +205,10 @@ describe("request e2e", () => {
   });
 
   it("invalid request due to too low of algo fee", async () => {
+
+    // fund main contract
+    await fundAccount(getApplicationAddress(appId), 101_000); // To account for opting in and the cost of the opt in txn
+
     const initGroup = init(
       {
         platformTokenAssetId: platformTokenAssetId,
@@ -233,6 +241,9 @@ describe("request e2e", () => {
   });
 
   it("invalid request due to too low of token fee", async () => {
+    // fund main contract
+    await fundAccount(getApplicationAddress(appId), 101_000); // To account for opting in and the cost of the opt in txn
+
     const initGroup = init(
       {
         platformTokenAssetId: platformTokenAssetId,
@@ -269,6 +280,9 @@ describe("request e2e", () => {
 
     const [url, path, appID, signature, interval, num_execs] = make_generic_args();
     const [request_args, destination, subscription_arg] = encode_args(url, path, appID, signature, interval, num_execs);
+
+    // fund main contract
+    await fundAccount(getApplicationAddress(appId), 101_000); // To account for opting in and the cost of the opt in txn
 
     const initGroup = init(
       {
@@ -328,6 +342,9 @@ describe("request e2e", () => {
     const [url, path, appID, signature, interval, num_execs] = make_generic_args();
     const [request_args, destination, subscription_arg] = encode_args(url, path, appID, signature, interval, num_execs);
 
+    // fund main contract
+    await fundAccount(getApplicationAddress(appId), 101_000); // To account for opting in and the cost of the opt in txn
+
     const initGroup = init(
       {
         platformTokenAssetId: platformTokenAssetId,
@@ -371,6 +388,9 @@ describe("request e2e", () => {
     const [url, path, appID, signature, interval, num_execs] = make_generic_args();
     const [request_args, destination, subscription_arg] = encode_args(url, path, appID, signature, interval, num_execs);
 
+    // fund main contract
+    await fundAccount(getApplicationAddress(appId), 101_000); // To account for opting in and the cost of the opt in txn
+
     const initGroup = init(
       {
         platformTokenAssetId: platformTokenAssetId,
@@ -413,6 +433,9 @@ describe("request e2e", () => {
   it("should reject if more than 4 refs are passed", async () => {
     const [url, path, appID, signature, interval, num_execs] = make_generic_args();
     const [request_args, destination] = encode_args(url, path, appID, signature, interval, num_execs);
+
+    // fund main contract
+    await fundAccount(getApplicationAddress(appId), 101_000); // To account for opting in and the cost of the opt in txn
 
     const initGroup = init(
       {
@@ -471,6 +494,9 @@ describe("request e2e", () => {
     const [url, path, appID, signature, interval, num_execs] = make_generic_args();
     const [request_args, destination] = encode_args(url, path, appID, signature, interval, num_execs);
 
+    // fund main contract
+    await fundAccount(getApplicationAddress(appId), 101_000); // To account for opting in and the cost of the opt in txn
+
     const initGroup = init(
       {
         platformTokenAssetId: platformTokenAssetId,
@@ -500,7 +526,7 @@ describe("request e2e", () => {
         user: user, 
         appId: appId, 
         suggestedParams: suggestedParams,
-        amount: 500
+        amount: 500_000_000_000
       }
     );
     
@@ -521,6 +547,6 @@ describe("request e2e", () => {
         boxRefs: [[Uint8Array.from(Buffer.from("test", "ascii")),123]]
       }
     );
-    requestGroup.execute(algodClient, 5);
+    await requestGroup.execute(algodClient, 5);
   });
 });

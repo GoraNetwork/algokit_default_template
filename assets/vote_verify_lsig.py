@@ -10,7 +10,13 @@ def approval_program():
 
     vrf_verify_output = VrfVerify.algorand(block_seed, vrf_proof, participation_account)
 
-    program = Seq([
+    program = Seq(
+        Assert(
+            Txn.fee() == Int(0),
+            Txn.close_remainder_to() == Global.zero_address(),
+            Txn.rekey_to() == Global.zero_address(),
+            Txn.asset_close_to() == Global.zero_address()
+        ),
         vrf_verify_output.outputReducer(
             lambda x,y: Assert(
                 And(
@@ -20,7 +26,7 @@ def approval_program():
             )
         ),
         Approve()
-    ])
+    )
     return program
 
 if __name__ == "__main__":

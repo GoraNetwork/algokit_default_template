@@ -134,6 +134,11 @@ type InitParams = {
                    
 export function init(initParams: InitParams){
   const initGroup = new AtomicTransactionComposer();
+  const suggestedParams = {
+    ...initParams.suggestedParams,
+    flatFee: true,
+    fee: 2000
+  };
   initGroup.addMethodCall({
     method: getMethodByName("init", mainContractABI),
     methodArgs: [
@@ -143,7 +148,7 @@ export function init(initParams: InitParams){
     sender: initParams.user.addr,
     signer: makeBasicAccountTransactionSigner(initParams.user),
     appID: initParams.appId,
-    suggestedParams: initParams.suggestedParams,
+    suggestedParams: suggestedParams,
   });
   return initGroup;
 }

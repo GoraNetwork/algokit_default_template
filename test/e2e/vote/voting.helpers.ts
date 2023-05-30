@@ -19,7 +19,8 @@ import {
 import {
   deployVoteContract,
   init,
-  userOptIn} from "../../../assets/transactions/main_transactions";
+  userOptIn
+} from "../../../assets/transactions/main_transactions";
 import {
   getRequestInfo,
   getGlobalStateMain,
@@ -88,6 +89,7 @@ export interface VotingTestState {
   mainAccount: Account;
   voteVerifyLsig: LogicSigAccount;
   user: Account;
+  alt_user: Account;
   suggestedParams: SuggestedParams;
   current_request_round: any;
   network: number;
@@ -118,8 +120,8 @@ export async function checkRewards(accountStatePreClaim:any,voteStatePreClaim:an
   const algoRequestFee = globalStateMain.algo_request_fee;
   const goraRequestFee = globalStateMain.gora_request_fee;
   const expectedVoteCount: number = globalStateMain.requests_completed[key_hash].vote_count;
-  const expectedAlgoRewards = Math.floor(voterCount * 100 / expectedVoteCount)*Math.floor(algoRequestFee/100);
-  const expectedGoraRewards = Math.floor(voterCount * 100 / expectedVoteCount)*Math.floor(goraRequestFee/100);
+  const expectedAlgoRewards = Math.floor((Math.floor(voterCount * 1_000_000 / expectedVoteCount) * algoRequestFee) / 1_000_000);
+  const expectedGoraRewards = Math.floor((Math.floor(voterCount * 1_000_000 / expectedVoteCount) * goraRequestFee) / 1_000_000);
   const voter_main_state_post = await getLocalStateMain(account.addr, mainAppId, algodClient);
   expect(voter_main_state_post.account_algo).toEqual(accountStatePreClaim.account_algo + expectedAlgoRewards);
   expect(voter_main_state_post.account_token_amount).toEqual(accountStatePreClaim.account_token_amount + expectedGoraRewards);
@@ -139,7 +141,7 @@ export async function beforeEachVotingTest(accountGenerator:AccountGenerator) {
 
   // test setup
   // eslint-disable-next-line prefer-const
-  let { appId, algodClient, platformTokenAssetId, user, suggestedParams, mainAccount, voteVerifyLsig } = await commonTestSetup(accountGenerator);
+  let { appId, algodClient, platformTokenAssetId, user, alt_user, suggestedParams, mainAccount, voteVerifyLsig } = await commonTestSetup(accountGenerator);
   const mainAppId = appId;
   let votingAppId: number;
 
@@ -168,7 +170,7 @@ export async function beforeEachVotingTest(accountGenerator:AccountGenerator) {
   await registerGroup.execute(algodClient, 5);
 
   // fund main contract
-  await fundAccount(getApplicationAddress(mainAppId), 2955000);
+  await fundAccount(getApplicationAddress(mainAppId), 101_000); // To account for opting in and the cost of the opt in txn
 
   //initialize main contract
   const initGroup = init({
@@ -186,12 +188,19 @@ export async function beforeEachVotingTest(accountGenerator:AccountGenerator) {
     flatFee: true,
     fee: 3000
   };
+
+  // Deploying vote, contract, we fund it this amount to account for:
+  // min balance increase of main for creating app,
+  // funding vote contract with a min balance and refill amount
+  await fundAccount(getApplicationAddress(mainAppId), 12855000);
+
   const deployVoteContractGroup = deployVoteContract({
     staker: user,
     appID: appId,
     suggestedParams: suggestedParams
   });
   const voteContract = await deployVoteContractGroup.execute(algodClient, 5);
+
   let log: Uint8Array;
   if (voteContract.methodResults[0].txInfo) {
     log = voteContract.methodResults[0].txInfo.logs[0];
@@ -200,14 +209,6 @@ export async function beforeEachVotingTest(accountGenerator:AccountGenerator) {
     // todo - is this required?
     throw new Error("Vote contract deployment failed");
   }
-  const registerVoterGroup = registerVoter({
-    user: userParticipationAccount,
-    votingAppId,
-    mainAppId: mainAppId,
-    primaryAccount: user.addr,
-    suggestedParams: await algodClient.getTransactionParams().do()
-  });
-  await registerVoterGroup.execute(algodClient, 5);
 
   const globalStateMain = await getGlobalStateMain(mainAppId, algodClient);
   const goraRequestFee = globalStateMain.gora_request_fee;
@@ -222,6 +223,7 @@ export async function beforeEachVotingTest(accountGenerator:AccountGenerator) {
     mainAccount,
     voteVerifyLsig,
     user,
+    alt_user,
     suggestedParams,
     current_request_round: undefined,
     network,

@@ -203,9 +203,6 @@ type VotingParams = {
   requestRoundSeed: Uint8Array,
   mainContractAppId: number,
   suggestedParams: SuggestedParams
-  ip: Uint8Array,
-  port: number,
-  network: number
   destinationAppId: number,
   destinationMethod: Uint8Array,
   requesterAddress: string,
@@ -225,7 +222,8 @@ type VotingParams = {
   appRefs: number[],
   assetRefs: number[],
   accountRefs: string[],
-  boxRefs: BoxReference[]
+  boxRefs: BoxReference[],
+  voteVerifyParams?: SuggestedParams
 }
 
 export async function vote(params: VotingParams){
@@ -285,15 +283,20 @@ export async function vote(params: VotingParams){
     }
   ];
 
-  const vote_verify_params = params.suggestedParams;
-  vote_verify_params.flatFee = true;
-  vote_verify_params.fee = 0;
+  let voteVerifyParams: SuggestedParams;
+  if (!params.voteVerifyParams){
+    voteVerifyParams = params.suggestedParams;
+    voteVerifyParams.flatFee = true;
+    voteVerifyParams.fee = 0;
+  } else {
+    voteVerifyParams = params.voteVerifyParams;
+  }
 
   const voteVerifyTxn = {
     txn: makeApplicationCallTxnFromObject({
       from: params.voteVerifyLsig.address(),
       appIndex: params.mainContractAppId,
-      suggestedParams: vote_verify_params,
+      suggestedParams: voteVerifyParams,
       appArgs: [
         getMethodByName("claim_rewards_vote_verify", mainContract).getSelector(),
         byte64Type.encode(new Uint8Array(Buffer.from(params.vrfResult))),
@@ -348,9 +351,6 @@ export async function vote(params: VotingParams){
       params.destinationAppId,
       Buffer.from(params.destinationMethod),
       params.requesterAddress,
-      params.ip,
-      params.port,
-      params.network,
       primaryAccountPK,
       response_type,
       response_body,

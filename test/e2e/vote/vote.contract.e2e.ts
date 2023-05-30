@@ -55,7 +55,6 @@ describe("Deploy Voting Contracts e2e", () => {
   let voteVerifyLsig: LogicSigAccount;
   let user: Account;
   let current_request_round: any;
-  let network: number;
   // TODO: parameterize and pass into main contract deployment
   let TIME_LOCK: number;
   let goraRequestFee: number;
@@ -71,7 +70,7 @@ describe("Deploy Voting Contracts e2e", () => {
 
     testState = await beforeEachVotingTest(accountGenerator);
     // flatten the testState object
-    ({ votingAppId, mainAppId, destinationAppId, algodClient, voteVerifyLsig, user, network, TIME_LOCK, goraRequestFee, algoRequestFee, requestBoxCost, current_request_round } = testState);
+    ({ votingAppId, mainAppId, destinationAppId, algodClient, voteVerifyLsig, user, TIME_LOCK, goraRequestFee, algoRequestFee, requestBoxCost, current_request_round } = testState);
   });
 
   it("should not fail even after large stake due to history", async () => {
@@ -128,7 +127,6 @@ describe("Deploy Voting Contracts e2e", () => {
         primaryAccount: voter.addr,
         methodSelector: consumerMethod,
         requestRound: current_request_round,
-        network:network,
         voteVerifyLsig,
         timelock: TIME_LOCK,
         request_key_hash: key_hash
@@ -201,7 +199,6 @@ describe("Deploy Voting Contracts e2e", () => {
         primaryAccount: voter.addr,
         methodSelector: consumerMethod,
         requestRound: current_request_round,
-        network:network,
         voteVerifyLsig,
         timelock: TIME_LOCK,
         request_key_hash: key_hash
@@ -265,7 +262,6 @@ describe("Deploy Voting Contracts e2e", () => {
         primaryAccount: voter.addr,
         methodSelector: consumerMethod,
         requestRound: testState.request_map.get(requester.addr),
-        network:network,
         voteVerifyLsig,
         timelock: TIME_LOCK,
         request_key_hash: key_hash

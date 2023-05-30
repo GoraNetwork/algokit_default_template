@@ -117,16 +117,20 @@ describe("CLI e2e", () => {
     return [requestArgs, destination, subscription_arg];
   }
 
-  it("should deply main contract", async () => {
+  it("should deploy main contract", async () => {
     await execAsync(deploy_main_command);
   });
 
-  it("should deply vote contract", async () => {
+  it("should deploy vote contract", async () => {
     const { stdout, stderr } = await execAsync(deploy_main_command);
     
     const mainId = parseInt(stdout.match("Main Contract ID: (.*)")![1]);
 
-    await fundAccount(getApplicationAddress(mainId), 2955000);
+    // Deploying vote, contract, we fund it this amount to account for:
+    // min balance increase of main for creating app,
+    // funding vote contract with a min balance and refill amount
+    await fundAccount(getApplicationAddress(mainId), 12855000);
+
 
     const deploy_vote_command = command_start + "deploy_vote "
       + "devnetMode " + "True "

@@ -135,7 +135,7 @@ def approval_program(
         App.globalPut(global_keys["refund_request_made_percentage"], Int(100)),
         App.globalPut(global_keys["refund_processing_percentage"], Int(10)),
         App.globalPut(global_keys["algo_request_fee"], Int(int(10_000))),
-        App.globalPut(global_keys["gora_request_fee"], Int(int(1_000_000))),
+        App.globalPut(global_keys["gora_request_fee"], Int(int(1_000_000_000))),
         App.globalPut(global_keys["voting_threshold"], Int(66)),
         App.globalPut(global_keys["time_lock"], Int(10)),
         App.globalPut(global_keys["vote_refill_threshold"], Int(10)),
@@ -154,7 +154,7 @@ def approval_program(
             .Then(Reject())
             .Else(
                 Seq([
-                    send_asset(TOKEN_ASSET_ID_INT, Global.current_application_address(), Int(0)),
+                    send_asset(TOKEN_ASSET_ID_INT, Global.current_application_address(), Int(0), Int(0)),
                     App.globalPut(global_keys["manager_address"], manager),
                     Approve()
                 ])
@@ -162,29 +162,50 @@ def approval_program(
         ])
 
     @Subroutine(TealType.none)
-    def send_asset(asset_id,receiver,amount):
+    def send_asset(asset_id,receiver,amount,fee_amount):
         return Seq([
             InnerTxnBuilder.Begin(),
             InnerTxnBuilder.SetFields({
                 TxnField.type_enum: TxnType.AssetTransfer,
                 TxnField.xfer_asset: asset_id,
                 TxnField.asset_receiver: receiver,
-                TxnField.asset_amount: amount
+                TxnField.asset_amount: amount,
+                TxnField.fee: fee_amount
             }),
             InnerTxnBuilder.Submit()
         ])
 
     @Subroutine(TealType.none)
-    def send_algo(receiver,amount):
+    def send_algo(receiver,amount,fee_amount):
         return Seq([
             InnerTxnBuilder.Begin(),
             InnerTxnBuilder.SetFields({
                 TxnField.type_enum: TxnType.Payment,
                 TxnField.receiver: receiver,
-                TxnField.amount: amount
+                TxnField.amount: amount,
+                TxnField.fee: fee_amount
             }),
             InnerTxnBuilder.Submit()
         ])
+    
+    # fee_pool - cost_of_request * number_of_requests_until_threshold > threshold
+    # where:
+    # fee_pool = vote_refill_amount * min_txn_fee
+    # cost_of_request = num_of_txns_for_request * min_txn_fee
+    # threshold = vote_refill_threshold * min_txn_fee
+    # => number_of_requests_until_threshold = (vote_refill_amount - vote_refill_threshold)
+    # => x = 10,000 - 10 = 9990
+
+    number_of_requests_until_threshold = App.globalGet(global_keys["vote_refill_amount"]) - App.globalGet(global_keys["vote_refill_threshold"])
+    vote_refill_fund_fee = Seq(
+        If(App.globalGet(global_keys["vote_refill_amount"]) < App.globalGet(global_keys["vote_refill_threshold"])).
+        Then(
+            Int(0) # TODO: not sure how we want to handle this.
+        ).
+        Else(
+            App.globalGet(global_keys["vote_refill_amount"])*Global.min_txn_fee() / number_of_requests_until_threshold
+        )
+    )
 
     @Subroutine(TealType.none)
     def request(request, destination, type, key, app_refs, asset_refs, account_refs, box_refs):
@@ -197,17 +218,11 @@ def approval_program(
         account_refs_length = Len(account_refs) / Int(32)
         box_refs_length = If(Len(box_refs) > Int(0)).Then(Btoi(Extract(box_refs, Int(0), Int(2)))).Else(Int(0))
         total_refs_length = (app_refs_length + asset_refs_length + account_refs_length + box_refs_length)
+        total_cost_of_request = App.globalGet(global_keys["algo_request_fee"]) + calc_box_cost(abi.size_of(hash_type),abi.size_of(RequestInfo))
 
         return Seq([
             # check length of refs
             Assert(total_refs_length <= Int(4)),
-            SmartAssert(account_algo >= App.globalGet(global_keys["algo_request_fee"]), "NOT ENOUGH ALGO"),
-            SmartAssert(account_token_amount >= App.globalGet(global_keys["gora_request_fee"])),
-            App.localPut(Txn.sender(), local_keys["account_algo"], account_algo - App.globalGet(global_keys["algo_request_fee"])),
-            App.localPut(Txn.sender(), local_keys["account_token_amount"], account_token_amount - App.globalGet(global_keys["gora_request_fee"])),
-            App.globalPut(global_keys["algo_fee_sink"], algo_fee_sink_balance + App.globalGet(global_keys["algo_request_fee"])),
-            App.globalPut(global_keys["token_fee_sink"], token_fee_sink_balance + App.globalGet(global_keys["gora_request_fee"])),
-            
             request_abi.set(Txn.tx_id()),
             app_abi.set(0),
             round_abi.set(Global.round()),
@@ -245,7 +260,12 @@ def approval_program(
                 total_votes_abi,
                 total_votes_refunded_abi
             ),
-            App.localPut(Txn.sender(), local_keys["account_algo"], App.localGet(Txn.sender(), local_keys["account_algo"]) - calc_box_cost(abi.size_of(hash_type),abi.size_of(RequestInfo))),
+            SmartAssert(account_algo >= total_cost_of_request, "NOT ENOUGH ALGO"), # TODO: do we even need to assert this since the amount would result in negative if not enough or maybe its for the nr?
+            SmartAssert(account_token_amount >= App.globalGet(global_keys["gora_request_fee"])),
+            App.localPut(Txn.sender(), local_keys["account_algo"], account_algo - total_cost_of_request),
+            App.localPut(Txn.sender(), local_keys["account_token_amount"], account_token_amount - App.globalGet(global_keys["gora_request_fee"])),
+            App.globalPut(global_keys["algo_fee_sink"], algo_fee_sink_balance + (App.globalGet(global_keys["algo_request_fee"]) - vote_refill_fund_fee)),
+            App.globalPut(global_keys["token_fee_sink"], token_fee_sink_balance + App.globalGet(global_keys["gora_request_fee"])),
             Assert(App.box_create(new_key_hash.get(), Int(abi.size_of(RequestInfo)))),
             App.box_put(new_key_hash.get(), current_request_info.encode()),
         ])
@@ -288,7 +308,7 @@ def approval_program(
             .Then(Seq([
                 App.localPut(Txn.sender(), local_keys["account_algo"], account_algo + refund(global_keys["algo_request_fee"])),
                 App.localPut(Txn.sender(), local_keys["account_token_amount"], account_token + refund(global_keys["gora_request_fee"])),
-                App.globalPut(global_keys["algo_fee_sink"], algo_fee_sink_balance -refund(global_keys["algo_request_fee"])),
+                App.globalPut(global_keys["algo_fee_sink"], algo_fee_sink_balance - (refund(global_keys["algo_request_fee"]) - vote_refill_fund_fee)),
                 App.globalPut(global_keys["token_fee_sink"], token_fee_sink_balance - refund(global_keys["gora_request_fee"])),
                 refund_request_box(requester)
             ]))
@@ -319,8 +339,6 @@ def approval_program(
         return Seq([
             populate_request_info_tmps(request_key_hash),
             SmartAssert(key_hash.get() == request_key_hash, "UNEXPECTED_VALUE"),
-            # TODO: if budget gets tight, could just access what you need via bytes and concat back in after so you don't have to store every time
-            # TODO: and apply this everywhere it occurs in the contract
             sender_address,
             sender_creator,
             SmartAssert(status_abi.get() != request_status["completed"], "REQUEST_ALREADY_COMPLETED"),
@@ -407,7 +425,7 @@ def approval_program(
             ),
             current_stake_abi.total_stake.store_into(total_stake_abi),
             stake_round_abi.set(Global.round()),
-            # State=1 means stake, 0 means unstake
+            # stake = 1 means stake, 0 means unstake
             If(stake == Int(1))
                 .Then(
                     # add the new stake amount to the total stake
@@ -479,7 +497,7 @@ def approval_program(
                     current_stake - unstake_amount == Int(0)
                 )
             ),
-            Assert(CheckTimeLock(App.localGet(Txn.sender(),local_keys["update_stake_timeout"]) < Global.round())),
+            Assert(CheckTimeLock(App.localGet(Txn.sender(),local_keys["update_stake_timeout"]) < Global.round())), 
             new_stake_amount_abi.set(unstake_amount),
             App.localPut(
                 Txn.sender(),
@@ -497,7 +515,7 @@ def approval_program(
                     Int(0)
                 )
             ),
-            send_asset(TOKEN_ASSET_ID_INT, Txn.sender(), unstake_amount)
+            send_asset(TOKEN_ASSET_ID_INT, Txn.sender(), unstake_amount, Int(0))
         ])
 
     @Subroutine(TealType.none)
@@ -607,14 +625,14 @@ def approval_program(
                     local_keys["account_token_amount"],
                     new_local_asset_amount
                 ),
-                send_asset(TOKEN_ASSET_ID_INT, Txn.sender(), withdraw_amount)
+                send_asset(TOKEN_ASSET_ID_INT, Txn.sender(), withdraw_amount, Int(0))
             ])).Else(Seq([
                 App.localPut(
                     Txn.sender(),
                     local_keys["account_algo"],
                     new_account_algo
                 ),
-                send_algo(Txn.sender(), withdraw_amount)
+                send_algo(Txn.sender(), withdraw_amount, Int(0))
             ])),
         ])
 
@@ -667,7 +685,14 @@ def approval_program(
                     )
                 )
                 .Then(
-                    pending_rewards_points.store((vote_count.get() * Int(100)) / completed_request_vote_count.get()),
+                    pending_rewards_points.store(
+                        Btoi(
+                            BytesDiv(
+                                BytesMul(Itob(vote_count.get()), Itob(Int(1_000_000))),
+                                Itob(completed_request_vote_count.get())
+                            )
+                        )
+                    ),
                     completed_request_rewards_payed.set(completed_request_rewards_payed.get() + history_local_stake.get()),
                     If(completed_request_rewards_payed.get() == completed_request_stake_count.get()).
                         Then(
@@ -755,14 +780,14 @@ def approval_program(
         return Seq([
             validate_previous_vote,
             #credit token rewards
-            token_rewards_to_pay.store(pending_rewards_points.load() * (App.globalGet(global_keys["gora_request_fee"]) / Int(100))),
+            token_rewards_to_pay.store(pending_rewards_points.load() * (App.globalGet(global_keys["gora_request_fee"])) / Int(1_000_000)),
             App.localPut(
                 rewards_account, local_keys["account_token_amount"], 
                 App.localGet(rewards_account, local_keys["account_token_amount"]) 
                 + token_rewards_to_pay.load()
             ),
             #credit algo rewards
-            algo_rewards_to_pay.store(pending_rewards_points.load() * (App.globalGet(global_keys["algo_request_fee"]) / Int(100))),
+            algo_rewards_to_pay.store(pending_rewards_points.load() * (App.globalGet(global_keys["algo_request_fee"])) / Int(1_000_000)),
             App.localPut(
                 rewards_account, local_keys["account_algo"], 
                 App.localGet(rewards_account, local_keys["account_algo"]) 
@@ -773,7 +798,7 @@ def approval_program(
     @Subroutine(TealType.none)
     def update_request_vote_tally():
         vote_txn = Gtxn[Txn.group_index()+Int(1)]
-        vote_count = Btoi(vote_txn.application_args[13])
+        vote_count = Btoi(vote_txn.application_args[10])
         request_key_hash = Txn.application_args[8]
 
         return Seq([
@@ -797,7 +822,7 @@ def approval_program(
     @Subroutine(TealType.none)
     def claim_rewards_from_vote():
         vote_txn = Gtxn[Txn.group_index()+Int(1)]
-        account = vote_txn.accounts[Btoi(vote_txn.application_args[10])]
+        account = vote_txn.accounts[Btoi(vote_txn.application_args[7])]
         
         contract_address = AppParam.address(vote_txn.application_id())
         contract_creator = AppParam.creator(vote_txn.application_id())
@@ -814,7 +839,7 @@ def approval_program(
             Assert(contract_creator.value() == Global.current_application_address()),
             update_rewards(account,Txn.application_args[9],Txn.accounts[Btoi(Txn.application_args[10])]),
             If(get_remaining_executions == Int(0))
-                .Then(send_algo(contract_address.value(), (Global.min_txn_fee() * App.globalGet(global_keys["vote_refill_amount"]) - Global.min_txn_fee()))), # -1 because this inner txn cost a txn fee
+                .Then(send_algo(contract_address.value(), (Global.min_txn_fee() * App.globalGet(global_keys["vote_refill_amount"]) - Global.min_txn_fee()), Global.min_txn_fee())), # -1 because this inner txn cost a txn fee
             update_request_vote_tally()
         ])
         
@@ -874,9 +899,11 @@ def approval_program(
                 TxnField.application_args:[Itob(Global.current_application_id())],
                 TxnField.global_num_byte_slices: Int(34),
                 TxnField.global_num_uints: Int(30),
+                # TODO: update vote contract to not allow opt in  / don't deploy it with local state spaces.
                 TxnField.local_num_byte_slices: Int(2),
                 TxnField.local_num_uints: Int(3),
-                TxnField.extra_program_pages: Int(1)
+                TxnField.extra_program_pages: Int(1),
+                TxnField.fee: Int(0)
             }),
             InnerTxnBuilder.Submit(),
             deployed_contract_id.store(InnerTxn.created_application_id()),
@@ -886,8 +913,8 @@ def approval_program(
             InnerTxnBuilder.Begin(),
             InnerTxnBuilder.SetFields({
                 TxnField.type_enum: TxnType.Payment,
-                TxnField.amount: MinBalance(deployed_contract_address.value()) + Int(100_000),
-                TxnField.fee: Int(0),
+                TxnField.amount: MinBalance(deployed_contract_address.value()) + App.globalGet(global_keys["vote_refill_amount"]) * Global.min_txn_fee(),
+                TxnField.fee: Int(0), # TODO: technically this is a refill
                 TxnField.receiver: deployed_contract_address.value()
             }),
             InnerTxnBuilder.Submit(),

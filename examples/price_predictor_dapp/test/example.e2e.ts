@@ -143,7 +143,6 @@ describe("Example Dapp Test", () => {
         primaryAccount: voter.addr,
         requestRound: current_request_round,
         methodSelector: destination_signature,
-        network: 100_001,
         timelock: REGISTER_KEY_TIME_LOCK,
         voteVerifyLsig,
         request_key_hash: key_hash
@@ -283,6 +282,12 @@ describe("Example Dapp Test", () => {
       flatFee: true,
       fee: 3000
     };
+
+    // Deploying vote, contract, we fund it this amount to account for:
+    // min balance increase of main for creating app,
+    // funding vote contract with a min balance and refill amount
+    await fundAccount(getApplicationAddress(mainAppId), 12855000);
+    
     const deployVoteContractGroup = deployVoteContract({
       staker: user,
       appID: mainAppId,

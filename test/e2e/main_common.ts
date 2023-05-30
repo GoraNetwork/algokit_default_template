@@ -61,12 +61,12 @@ export async function commonTestSetup(accountGenerator:AccountGenerator) : Promi
   const program = cache["voteVerifyLsig"];
 
   const voteVerifyLsig = new LogicSigAccount(program);
-  fundAccount(voteVerifyLsig.address(),1e9);
 
   const abiHash = getABIHash("../assets/abi/main-contract.json");
   const votingContractParams = {
     CONTRACT_VERSION: abiHash,
-    VOTE_VERIFY_LSIG_ADDRESS: voteVerifyLsig.address()
+    VOTE_VERIFY_LSIG_ADDRESS: voteVerifyLsig.address(),
+    DEV_MODE: 1
   };
   if (!cache["votingApproval"]) {
     cache["votingApproval"] = await compilePyTeal(path.join(__dirname, "../../assets/voting_approval.py"), votingContractParams);
@@ -95,9 +95,9 @@ export async function commonTestSetup(accountGenerator:AccountGenerator) : Promi
     from: mainAccount,
     to: user.addr,
     assetId: platformTokenAssetId,
-    amount: 50_000_000_000
+    amount: 50_000_000_000_000
   });
-  await fundAccount(getApplicationAddress(appId), 202_000);
+  await fundAccount(getApplicationAddress(appId), 100_000); // for the minimum balance requirement
 
   const alt_user = accountGenerator.generateAccount();
 
@@ -107,7 +107,7 @@ export async function commonTestSetup(accountGenerator:AccountGenerator) : Promi
     from: mainAccount,
     to: alt_user.addr,
     assetId: platformTokenAssetId,
-    amount: 50_000_000_000
+    amount: 50_000_000_000_000
   });
 
   return {

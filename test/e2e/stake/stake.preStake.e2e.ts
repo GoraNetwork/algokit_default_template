@@ -29,6 +29,7 @@ import {
 import { AccountGenerator } from "../vote/voting.helpers";
 import accounts from "../../test_fixtures/accounts.json";
 import {  exec } from "child_process";
+import { fundAccount } from "algotest";
 
 describe("Staking e2e", () => {
   let appId: number;
@@ -50,6 +51,9 @@ describe("Staking e2e", () => {
     user = testParameters.user;
     suggestedParams = testParameters.suggestedParams;
     alt_user = testParameters.alt_user;
+
+    // fund main contract
+    await fundAccount(getApplicationAddress(appId), 101_000); // To account for opting in and the cost of the opt in txn
 
     const initGroup = init({
       platformTokenAssetId: platformTokenAssetId,
@@ -330,7 +334,7 @@ describe("Staking e2e", () => {
     expect(localState["aa"]).toEqual(depositAmount - withdrawAmount);
 
     const userInfoPost = await algodClient.accountInformation(user.addr).do();
-    expect(userInfoPre["amount"]+ withdrawAmount - 1000).toEqual(userInfoPost["amount"]); // TODO: Where is the 500 from?
+    expect(userInfoPre["amount"]+ withdrawAmount - 2000).toEqual(userInfoPost["amount"]); // TODO: Where is the 500 from?
   });
 
   it("should allow heartbeat txn", async () => {
@@ -363,6 +367,8 @@ describe("Staking e2e", () => {
 
     // wait for time lock
     await waitForRounds(TIME_LOCK + 1);
+
+    await fundAccount(getApplicationAddress(appId),1000);
 
     // Unstake
     const unstakingGroup = unstake({

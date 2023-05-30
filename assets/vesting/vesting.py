@@ -61,6 +61,14 @@ class Vesting(Application):
             Reject()
         ])
     
+    @update
+    def update(
+        self
+    ):
+        return Seq([
+            Reject()
+        ])
+    
     @delete
     def delete(
         self

@@ -39,7 +39,7 @@
     "@typescript-eslint/parser": "^5.16.0",
     "algosdk": "^2.1.0",
     "algotest": "^0.0.5",
-    "algoutils": "^0.0.3",
+    "algoutils": "^0.0.4",
     "chai": "^4.3.6",
     "eslint": "^8.17.0",
     "husky": "^8.0.1",

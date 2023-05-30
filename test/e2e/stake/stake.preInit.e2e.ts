@@ -19,6 +19,7 @@ import { getGlobalStake } from "../../../utils/gora_utils";
 import { AccountGenerator } from "../vote/voting.helpers";
 
 import accounts from "../../test_fixtures/accounts.json";
+import { fundAccount } from "algotest";
 
 describe("Staking e2e", () => {
   let appId: number;
@@ -40,6 +41,9 @@ describe("Staking e2e", () => {
   });
 
   it("should check on_creation init", async () => {
+    // fund main contract
+    await fundAccount(getApplicationAddress(appId), 101_000); // To account for opting in and the cost of the opt in txn
+
     const initGroup = init({
       platformTokenAssetId: platformTokenAssetId,
       user: user, 
@@ -65,6 +69,9 @@ describe("Staking e2e", () => {
   });
 
   it("should init to opt into token", async () => {
+    // fund main contract
+    await fundAccount(getApplicationAddress(appId), 101_000); // To account for opting in and the cost of the opt in txn
+
     const initGroup = init({
       platformTokenAssetId: platformTokenAssetId,
       user: user, 

@@ -19,6 +19,7 @@ import { depositAlgo, depositToken } from "../../assets/transactions/staking_tra
 import { init } from "../../assets/transactions/main_transactions";
 import { DestinationType, RequestArgsType, } from "../../utils/abi_types";
 import accounts from "../test_fixtures/accounts.json";
+import { kmdNode } from "@algo-builder/web/build/errors/errors-list";
 
 const MAX_POSSIBLE_DEPTH = 6;
 describe("inner_tests e2e", () => {
@@ -65,7 +66,7 @@ describe("inner_tests e2e", () => {
         user: mainAccount, 
         appId: mainAppId, 
         suggestedParams: suggestedParams, 
-        amount: 50_000_000_000,
+        amount: 50_000_000_000_000,
         account_to_deposit_to: getApplicationAddress(app_id)
       }
     );
@@ -82,6 +83,9 @@ describe("inner_tests e2e", () => {
     user = testParameters.user;
     suggestedParams = testParameters.suggestedParams;
     mainAccount = testParameters.mainAccount;
+    
+    // fund main contract
+    await fundAccount(getApplicationAddress(mainAppId), 101_000); // To account for opting in and the cost of the opt in txn
 
     let group = init({
       platformTokenAssetId: platformTokenAssetId,
@@ -156,6 +160,26 @@ describe("inner_tests e2e", () => {
       }
     );
     const result = await group.execute(algodClient, 5);
+
+    let current_txn = result.methodResults[0].txInfo;
+    for(let i = 0; i < 16; i++)
+    {
+      if(typeof current_txn!["inner-txns"] !== "undefined" && current_txn!.txn.txn.apid !== mainAppId)
+      {
+        current_txn = current_txn!["inner-txns"][0];
+      }
+      else
+      {
+        break;
+      }
+    }
+    expect(current_txn!.txn.txn.apaa[1].slice(2)).toEqual(requestArgs);
+    expect(current_txn!.txn.txn.apaa[2].slice(2)).toEqual(destination);
+
+    const uint64_one = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 1]);
+    expect(current_txn!.txn.txn.apaa[3]).toEqual(uint64_one);
+    const request_box_key = new Uint8Array(Buffer.from("my_key"));
+    expect(current_txn!.txn.txn.apaa[4].slice(2)).toEqual(request_box_key);
   });
 });
 

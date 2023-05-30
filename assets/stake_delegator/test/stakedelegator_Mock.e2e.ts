@@ -1,6 +1,7 @@
 import { 
   ABIUintType, 
   Account, 
+  decodeUint64, 
   encodeUint64, 
   generateAccount, 
   makeAssetConfigTxnWithSuggestedParams, 
@@ -12,12 +13,13 @@ import {
 } from "algosdk";
 import * as bkr from "beaker-ts";
 
-import { SandboxAccount } from "beaker-ts/lib/sandbox/accounts";
+import { SandboxAccount } from "beaker-ts/src/sandbox/accounts";
 import { StakeDelegator } from "../artifacts/stakedelegator_client";
 import { MockMain } from "../artifacts/mock_main/mockmain_client";
 import { compileBeaker, sendGenericAsset, sendGenericPayment } from "../../../utils/beaker_test_utils";
 import { getAppBoxes, getGlobal, getLocal, getMockMainLocal, getPredictedLocal } from "../delegatorUtils";
 import * as fs from "fs";
+import SuggestedParamsRequest from "algosdk/dist/types/client/v2/algod/suggestedParams";
 
 async function sleep_rounds(rounds:number, acc:SandboxAccount){
   for(let i = 0; i < rounds; i++)
@@ -85,7 +87,7 @@ describe("Stake Delegator Tests", () => {
       signer: sandboxAccount.signer,
       sender: sandboxAccount.addr,
     });
-    let appCreateResults = await sandboxMockMainClient.create();
+    let appCreateResults = await sandboxMockMainClient._create();
     mockMainID = appCreateResults.appId;
     mockMainAddress = appCreateResults.appAddress;
 
@@ -98,12 +100,12 @@ describe("Stake Delegator Tests", () => {
     // the app call transactions 
     sandboxAppClient = getDelegatorClient({addr: sandboxAccount.addr, sk: sandboxAccount.privateKey});
 
-    appCreateResults = await sandboxAppClient.create({extraPages: 1});
+    appCreateResults = await sandboxAppClient._create({extraPages: 1});
     appId  = appCreateResults.appId;
     appAddress = appCreateResults.appAddress;
 
     await sendGenericPayment(sandboxAccount.signer, sandboxAccount.addr, mockMainAddress, 1e6);
-    await sandboxMockMainClient.optIn();
+    await sandboxMockMainClient._optIn();
     await sandboxMockMainClient.init_app({asset: BigInt(testAsset)});
 
     users = [];
@@ -115,12 +117,15 @@ describe("Stake Delegator Tests", () => {
       await sendGenericAsset(sandboxAccount.signer, testAsset, sandboxAccount.addr, user.addr, 20_000);
       users.push(user);
     }
-    await sandboxAppClient.optIn();
+    await sandboxAppClient._optIn();
   });
   
   async function stake(amount: number, user: Account) {
     const state = await getGlobal(appId);
     const userClient = getDelegatorClient(user);
+    const sp = await userClient.client.getTransactionParams().do();
+    sp.flatFee = true;
+    sp.fee = 2000;
     const result = await userClient.stake({
       asset_pay: makeAssetTransferTxnWithSuggestedParamsFromObject(
         {
@@ -134,13 +139,20 @@ describe("Stake Delegator Tests", () => {
       main_app_ref: BigInt(mockMainID),
       asset_reference: BigInt(testAsset),
       manager_reference: sandboxAccount.addr
-    });
+    },
+    {
+      suggestedParams: sp
+    }
+    );
     return result;
   }
 
   async function unstake(amount: number, user: Account) {
     const state = await getGlobal(appId);
     const userClient = getDelegatorClient(user);
+    const sp = await userClient.client.getTransactionParams().do();
+    sp.flatFee = true;
+    sp.fee = 2000;
 
     const result = await userClient.unstake({
       amount_to_withdraw: BigInt(amount),
@@ -148,12 +160,15 @@ describe("Stake Delegator Tests", () => {
       vesting_on_behalf_of: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ",
       asset_reference: BigInt(testAsset),
       manager_reference: sandboxAccount.addr
+    },
+    {
+      suggestedParams: sp
     });
   }
 
   it("unable to delete the app", async () => {
     await sendGenericPayment(sandboxAccount.signer, sandboxAccount.addr, appAddress, 1e6);
-    await expect(sandboxAppClient.delete()).rejects.toThrow("transaction rejected by ApprovalProgram");
+    await expect(sandboxAppClient._delete()).rejects.toThrow("transaction rejected by ApprovalProgram");
   });
 
   it("Basic stake, unstake and round iteration", async () => {
@@ -162,7 +177,7 @@ describe("Stake Delegator Tests", () => {
     for(let i = 0; i < users.length; i++)
     {
       const userClient = getDelegatorClient(users[i]);
-      await userClient.optIn();
+      await userClient._optIn();
     }
     const result = await sandboxAppClient.init_app({asset: BigInt(testAsset), timelock: BigInt(goracle_timelock), main_app_id: BigInt(mockMainID), manager_address: sandboxAccount.addr, manager_algo_share: BigInt(0), manager_gora_share: BigInt(0)});
 
@@ -216,7 +231,7 @@ describe("Stake Delegator Tests", () => {
     for(let i = 0; i < users.length; i++)
     {
       const userClient = getDelegatorClient(users[i]);
-      await userClient.optIn();
+      await userClient._optIn();
     }
     const result = await sandboxAppClient.init_app({asset: BigInt(testAsset), timelock: BigInt(goracle_timelock), main_app_id: BigInt(mockMainID), manager_address: sandboxAccount.addr, manager_algo_share: BigInt(0), manager_gora_share: BigInt(0)});
     await stake(5_000, users[0]);
@@ -230,7 +245,7 @@ describe("Stake Delegator Tests", () => {
     for(let i = 0; i < users.length; i++)
     {
       const userClient = getDelegatorClient(users[i]);
-      const result = await userClient.optIn();
+      const result = await userClient._optIn();
     }
     let result = await sandboxAppClient.init_app({asset: BigInt(testAsset), timelock: BigInt(goracle_timelock), main_app_id: BigInt(mockMainID), manager_address: sandboxAccount.addr, manager_algo_share: BigInt(0), manager_gora_share: BigInt(0)});
     const foo = await sandboxAppClient.configure_settings({manager_address: sandboxAccount.addr, manager_algo_share: BigInt(200), manager_gora_share: BigInt(100)});
@@ -279,13 +294,21 @@ describe("Stake Delegator Tests", () => {
     let account_info_result = await userClient.client.accountInformation(users[0].addr).do();
     const algo_balance_pre = account_info_result["amount"];
 
-    result = await userClient.user_claim({pay: transferTxn, asset_reference: BigInt(testAsset), main_app_reference: BigInt(mockMainID), manager_reference: sandboxAccount.addr});
+    const sp = await userClient.client.getTransactionParams().do();
+    sp.flatFee = true;
+    sp.fee = 2000;
+
+    result = await userClient.user_claim(
+      {pay: transferTxn, asset_reference: BigInt(testAsset), main_app_reference: BigInt(mockMainID), manager_reference: sandboxAccount.addr},
+      {
+        suggestedParams: sp
+      });
     asset_info_result = await userClient.client.accountAssetInformation(users[0].addr, testAsset).do();
     let assetBalance_post = asset_info_result["asset-holding"]["amount"];
     account_info_result = await userClient.client.accountInformation(users[0].addr).do();
     const algo_balance_post = account_info_result["amount"];
     
-    expect(Math.round(3000 + algo_balance_post - algo_balance_pre)).toEqual(10); //3k because 3 txns
+    expect(Math.round(4000 + algo_balance_post - algo_balance_pre)).toEqual(10); //4k because 4 txns (one is an opup)
     expect(Math.round(assetBalance_post - assetBalance_pre)).toEqual(22);
 
     await sleep_rounds(goracle_timelock, sandboxAccount);
@@ -305,11 +328,19 @@ describe("Stake Delegator Tests", () => {
       goracle_token_reference: BigInt(testAsset),
       main_app_reference: BigInt(mockMainID),
       manager_reference: sandboxAccount.addr
+    },
+    {
+      suggestedParams: sp
     });
 
     asset_info_result = await userClient.client.accountAssetInformation(users[0].addr, testAsset).do();
     assetBalance_post = asset_info_result["asset-holding"]["amount"];
     expect(assetBalance_post - assetBalance_pre).toEqual(10_000);
+
+    
+    // restake, this was put here to test an issue where restaking caused a crash cause local aggregation tracker wasn't reset
+    await stake(10_000, users[0]);
+
   });
 
   it("manager key registration", async () => {
@@ -318,7 +349,7 @@ describe("Stake Delegator Tests", () => {
     for(let i = 0; i < users.length; i++)
     {
       const userClient = getDelegatorClient(users[i]);
-      await userClient.optIn();
+      await userClient._optIn();
     }
     const result = await sandboxAppClient.init_app({asset: BigInt(testAsset), timelock: BigInt(goracle_timelock), main_app_id: BigInt(mockMainID), manager_address: sandboxAccount.addr, manager_algo_share: BigInt(0), manager_gora_share: BigInt(0)});
 

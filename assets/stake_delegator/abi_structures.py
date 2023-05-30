@@ -13,8 +13,12 @@ VestingTrackerAlgoSdk = algosdkAbi.TupleType([
 class RewardsTracker(abi.NamedTuple):
     algo_rewards: abi.Field[abi.Uint64]
     gora_rewards: abi.Field[abi.Uint64]
+    algo_non_stake: abi.Field[abi.Uint64]
+    gora_non_stake: abi.Field[abi.Uint64]
 
 RewardsTrackerAlgoSdk = algosdkAbi.TupleType([
+        algosdkAbi.UintType(64),
+        algosdkAbi.UintType(64),
         algosdkAbi.UintType(64),
         algosdkAbi.UintType(64),
     ])
