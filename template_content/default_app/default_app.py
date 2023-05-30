@@ -189,4 +189,4 @@ if __name__ == "__main__":
     params = yaml.safe_load(sys.argv[1])
     MAIN_APP_ID = Int(params['MAIN_APP_ID'])
     MAIN_APP_ADDRESS = Bytes(algosdk.encoding.decode_address(algosdk.logic.get_application_address(params['MAIN_APP_ID'])))
-    app_spec = app.build(client=beaker.sandbox.get_algod_client()).export(path + "/default_app/artifacts/")
+    app_spec = app.build(beaker.localnet.get_algod_client()).export(path + "/default_app/artifacts/")
