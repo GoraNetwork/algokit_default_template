@@ -81,7 +81,7 @@ deregister_voter_selector = MethodSignature(get_method_signature("deregister_vot
 delete_box_selector = MethodSignature(get_method_signature("delete_box","voting"))
 reset_previous_vote_selector = MethodSignature(get_method_signature("reset_previous_vote","voting"))
 
-def approval_program(CONTRACT_VERSION, VOTE_VERIFY_LSIG_ADDRESS):
+def approval_program(CONTRACT_VERSION, VOTE_VERIFY_LSIG_ADDRESS, DEV_MODE=False):
     CONTRACT_VERSION_BYTES = Bytes(CONTRACT_VERSION)
     MAIN_APP = App.globalGet(global_keys["main_app"])
     VOTE_VERIFY_LSIG_ADDRESS = Addr(VOTE_VERIFY_LSIG_ADDRESS)
@@ -98,7 +98,7 @@ def approval_program(CONTRACT_VERSION, VOTE_VERIFY_LSIG_ADDRESS):
 
     @Subroutine(TealType.none)
     def get_local_stake(request_round:abi.Uint64):
-        local_stake_array = App.localGetEx(get_primary_account(Int(10)), MAIN_APP, main_local_keys["local_stake_array"])
+        local_stake_array = App.localGetEx(get_primary_account(Int(7)), MAIN_APP, main_local_keys["local_stake_array"])
         return Seq([
             local_stake_array,
             stake_history_abi.decode(local_stake_array.value()),
@@ -263,7 +263,7 @@ def approval_program(CONTRACT_VERSION, VOTE_VERIFY_LSIG_ADDRESS):
             ).Else(
                 Seq([
                     SmartAssert(App.box_delete(rewards_address)),
-                    If(calc_box_cost(32,abi.size_of(LocalHistoryEntry)) > Global.min_txn_fee())
+                    If(calc_box_cost(32,abi.size_of(LocalHistoryEntry)) >= Global.min_txn_fee()) # TODO: probably want to be at least equal to, to allow deleting boxes no matter what.
                     .Then(
                         InnerTxnBuilder.Begin(),
                         InnerTxnBuilder.SetFields({
@@ -275,7 +275,7 @@ def approval_program(CONTRACT_VERSION, VOTE_VERIFY_LSIG_ADDRESS):
                                 ) -
                                 Global.min_txn_fee()
                             ),
-                            TxnField.fee: Global.min_txn_fee(),
+                            TxnField.fee: Global.min_txn_fee(), # TODO: I think this one is fine since we don't want to punish people for resetting vote boxes to clean up
                             TxnField.receiver: rewards_address
                         }),
                         InnerTxnBuilder.Submit(),
@@ -307,13 +307,14 @@ def approval_program(CONTRACT_VERSION, VOTE_VERIFY_LSIG_ADDRESS):
         vote_verify_txn = Gtxn[Txn.group_index()-Int(1)]
 
         return Seq([
-            (sender_previous_vote := App.box_get(get_primary_account(Int(10)))),
+            (sender_previous_vote := App.box_get(get_primary_account(Int(7)))),
             And(
                 sender_previous_vote.value() == vote_verify_txn.application_args[9],
                 vote_verify_txn.type_enum()==TxnType.ApplicationCall,
                 vote_verify_txn.on_completion() == OnComplete.NoOp,
                 vote_verify_txn.sender() == VOTE_VERIFY_LSIG_ADDRESS,
                 vote_verify_txn.application_id() == MAIN_APP,
+                vote_verify_txn.fee() == Int(0),
                 vote_verify_txn.application_args[0] == MethodSignature(get_method_signature("claim_rewards_vote_verify","main")),
                 vote_verify_txn.application_args[1] == vrf_result,
                 vote_verify_txn.application_args[2] == vrf_proof,
@@ -327,7 +328,7 @@ def approval_program(CONTRACT_VERSION, VOTE_VERIFY_LSIG_ADDRESS):
         vote_verify_txn = Gtxn[Txn.group_index()-Int(1)]
 
         return Seq([
-            (sender_previous_vote := App.box_get(get_primary_account(Int(10)))),
+            (sender_previous_vote := App.box_get(get_primary_account(Int(7)))),
             And(
                 sender_previous_vote.value() == vote_verify_txn.application_args[9],
                 vote_verify_txn.type_enum()==TxnType.ApplicationCall,
@@ -392,7 +393,6 @@ def approval_program(CONTRACT_VERSION, VOTE_VERIFY_LSIG_ADDRESS):
         requester_account: Expr,
         response_type_arg: Expr,
         response_body_arg: Expr,
-        network: Expr,
         vote_count_arg: Expr,
         z_index: Expr,
         request_key_hash_arg: Expr
@@ -405,7 +405,7 @@ def approval_program(CONTRACT_VERSION, VOTE_VERIFY_LSIG_ADDRESS):
         previous_vote_hash = abi.make(hash_type)
 
         previous_vote_info = Seq([
-            (previous_vote := App.box_get(get_primary_account(Int(10)))),
+            (previous_vote := App.box_get(get_primary_account(Int(7)))),
             (previous_vote_info_local := LocalHistoryEntry()).decode(previous_vote.value()),
             (previous_vote_info_local.proposal_entry).store_into(previous_proposal_entry := ProposalsEntry()),
             previous_proposal_entry.vote_round.store_into((previous_vote_round := abi.Uint64())),
@@ -489,7 +489,7 @@ def approval_program(CONTRACT_VERSION, VOTE_VERIFY_LSIG_ADDRESS):
 
         is_valid_participant = Seq([
             # make sure voter is valid participant
-            (stored_timestamp := App.localGetEx(get_primary_account(Int(10)), MAIN_APP,  main_local_keys["local_public_key_timestamp"])),
+            (stored_timestamp := App.localGetEx(get_primary_account(Int(7)), MAIN_APP,  main_local_keys["local_public_key_timestamp"])),
             SmartAssert(local_stake_abi.get() > Int(0), "VOTER_ZERO_STAKE"),
             SmartAssert(
                 CheckTimeLock(
@@ -525,7 +525,7 @@ def approval_program(CONTRACT_VERSION, VOTE_VERIFY_LSIG_ADDRESS):
                 previous_proposal_entry
             ),
             App.box_put(
-                get_primary_account(Int(10)),
+                get_primary_account(Int(7)),
                 previous_vote_info_local.encode()
             ),
             (zero := abi.Uint64()).set(0),
@@ -609,6 +609,11 @@ def approval_program(CONTRACT_VERSION, VOTE_VERIFY_LSIG_ADDRESS):
 
         # parse destination
         # parse payload by getting first 2 bytes for length, then iterate through each payload and send as appArg
+
+        validate_vote_verify = SmartAssert(validate_vote_verify_txn(vrf_result, vrf_proof, round_abi.get()))
+        if DEV_MODE:
+            validate_vote_verify = SmartAssert(validate_vote_verify_txn_dev_mode(vrf_result, vrf_proof))
+
         return Seq([
             previous_vote_info,
             populate_request_info,
@@ -619,11 +624,7 @@ def approval_program(CONTRACT_VERSION, VOTE_VERIFY_LSIG_ADDRESS):
             is_valid_participant,
             # check that vrf result and proof matches result and proof passed into lsig
             # if network is >100,000, use dev mode validation which takes block seed from note field
-            If(network > Int(100_000)).Then(
-                SmartAssert(validate_vote_verify_txn_dev_mode(vrf_result, vrf_proof))
-            ).Else(
-                SmartAssert(validate_vote_verify_txn(vrf_result, vrf_proof, round_abi.get()))
-            ),
+            validate_vote_verify,
             process_incoming_vote_and_update_values,
             # Log tally and threshold.
             LogDev(Itob(vote_count_abi.get() * Int(100))),
@@ -665,11 +666,10 @@ def approval_program(CONTRACT_VERSION, VOTE_VERIFY_LSIG_ADDRESS):
                     Txn.applications[Btoi(Txn.application_args[4])], # destination_app_arg
                     Txn.application_args[5], # destination_method_arg
                     Txn.accounts[Btoi(Txn.application_args[6])], # requester_account_arg
-                    Txn.application_args[11], # response_type_arg
-                    Txn.application_args[12], # response_body_arg
-                    Btoi(Txn.application_args[9]), # network
-                    Btoi(Txn.application_args[13]), # vote count
-                    Btoi(Txn.application_args[14]), # z index
+                    Txn.application_args[8], # response_type_arg
+                    Txn.application_args[9], # response_body_arg
+                    Btoi(Txn.application_args[10]), # vote count
+                    Btoi(Txn.application_args[11]), # z index
                     vote_verify_txn.application_args[8] # request_key_hash
                 ),
                 Approve()

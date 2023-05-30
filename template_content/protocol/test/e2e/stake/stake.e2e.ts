@@ -4,6 +4,7 @@ import {
   decodeAddress,
   SuggestedParams,
   modelsv2,
+  getApplicationAddress,
 } from "algosdk";
 import {
   fundAccount
@@ -60,6 +61,9 @@ describe("Staking e2e", () => {
     platformTokenAssetId = testParameters.platformTokenAssetId;
     user = testParameters.user;
     suggestedParams = testParameters.suggestedParams;
+
+    // fund main contract
+    await fundAccount(getApplicationAddress(appId), 101_000); // To account for opting in and the cost of the opt in txn
 
     const initGroup = init({
       platformTokenAssetId: platformTokenAssetId,

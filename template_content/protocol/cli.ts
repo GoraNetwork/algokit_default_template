@@ -274,7 +274,7 @@ async function run() {
       const fund_txn = algosdk.makePaymentTxnWithSuggestedParams(
         user.addr,
         getApplicationAddress(parseInt(main_info["main_id"])),
-        30_000_000, // TODO: I think this was for just one and a little under the new charge for 1.
+        2_695_000,
         undefined,
         undefined,
         await algodClient.getTransactionParams().do(),
@@ -526,10 +526,7 @@ async function run() {
       console.log("votingContract <integer>");
       console.log("platformTokenAssetId <integer");
       console.log("claimAccount <string>");
-      console.log("ip <array of bytes, length 4>");
-      console.log("port <integer>");
-      console.log("network <integer>");
-      console.log("\nExample:\n ./cli.ts claim_rewards appID 12 votingContract 2 platformTokenAssetId 1 claimAccount 7GRDUITRNEO2RYXDCE6RTXEPBAKMAM3GDEXH2PTF5BZL5HUN2V7EYKIBHU ip 127,0,0,1 port 1234 network 1");
+      console.log("\nExample:\n ./cli.ts claim_rewards appID 12 votingContract 2 platformTokenAssetId 1 claimAccount 7GRDUITRNEO2RYXDCE6RTXEPBAKMAM3GDEXH2PTF5BZL5HUN2V7EYKIBHU");
       return;
     }
 
@@ -608,9 +605,6 @@ async function run() {
       console.log("voteAppID <integer>");
       console.log("vote <string>");
       console.log("mainAppID <integer>");
-      console.log("ip <array of bytes, length 4>");
-      console.log("port <integer>");
-      console.log("network <integer>");
       console.log("destinationAppID <integer>");
       console.log("destinationMethod <array of bytes>");
       console.log("requesterAddress <string>");
@@ -661,9 +655,6 @@ async function run() {
         requestRoundSeed: new Uint8Array(requestRoundSeed),
         mainContractAppId: parseInt(get_arg("mainAppID")!),
         suggestedParams,
-        ip: Buffer.from((get_arg("ip")!).split(",").map(Number)),
-        port: parseInt(get_arg("port")!),
-        network: parseInt(get_arg("network")!),
         destinationAppId: parseInt(get_arg("destinationAppID")!),
         destinationMethod: Buffer.from((get_arg("destinationMethod")!).split(",").map(Number)),
         requesterAddress: get_arg("requesterAddress")!,

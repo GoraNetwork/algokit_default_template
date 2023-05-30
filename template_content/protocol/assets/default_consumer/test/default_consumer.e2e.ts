@@ -39,7 +39,7 @@ const ABI_PATH = "../artifacts/contract.json";
 const consumerContract = loadABIContract(path.join(__dirname, ABI_PATH));
 const consumerMethod = consumerContract.methods[2].getSelector();
 
-describe("Stake Delegator Tests", () => {
+describe("Default Consumer App Tests", () => {
   let sandboxAccount: SandboxAccount;
   let DefaultConsumerClient: DefaultConsumerApp;
   let appId: number;

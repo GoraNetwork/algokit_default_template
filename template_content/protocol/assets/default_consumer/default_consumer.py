@@ -69,8 +69,6 @@ def verify_app_call():
         vote_app_creator,
         voting_contract_creator,
         Assert(
-            # TODO: is request_status necessary? If so, we will need to reorder the innerTxn in voting contract
-            # request_status.get() == RSKEYMAP["completed"],
             vote_app_creator.value() == MAIN_APP_ADDRESS,
             vote_app_creator.value() == voting_contract_creator.value(),
             Txn.application_id() == Global.current_application_id(),

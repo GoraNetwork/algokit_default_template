@@ -132,7 +132,6 @@ type TestVoteParams = {
   requesterAddress: string,
   primaryAccount: string,
   methodSelector: any,
-  network: number,
   request_key_hash: Uint8Array,
   requestRound?: any,
   vrfResult?: Uint8Array,
@@ -143,6 +142,7 @@ type TestVoteParams = {
   mockLease?: Uint8Array,
   mockParams?: SuggestedParams
   mockPreviousVote?: Uint8Array,
+  voteVerifyParams?: SuggestedParams,
   appRefs?: number[],
   assetRefs?: number[],
   accountRefs?: string[],
@@ -173,7 +173,6 @@ export async function testVote({
   requesterAddress,
   primaryAccount,
   methodSelector,
-  network,
   requestRound,
   vrfResult,
   vrfProof,
@@ -184,6 +183,7 @@ export async function testVote({
   timelock,
   request_key_hash,
   mockPreviousVote,
+  voteVerifyParams,
   appRefs,
   assetRefs,
   accountRefs,
@@ -265,7 +265,6 @@ export async function testVote({
     request_id = new Uint8Array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
   }
 
-
   const voteGroup = await vote({
     user: voter,
     voteVerifyLsig: voteVerifyLsig,
@@ -275,9 +274,6 @@ export async function testVote({
     requestRoundSeed: new Uint8Array(requestRoundSeed),
     mainContractAppId: mainAppId,
     suggestedParams: suggestedParams,
-    ip: Buffer.from([127,0,0,1]),
-    port: 1234,
-    network: network,
     destinationAppId: destinationAppId,
     destinationMethod: methodSelector,
     requesterAddress: requesterAddress,
@@ -297,7 +293,8 @@ export async function testVote({
     appRefs: appRefs,
     assetRefs: assetRefs,
     accountRefs: accountRefs,
-    boxRefs: boxRefs
+    boxRefs: boxRefs,
+    voteVerifyParams: voteVerifyParams
   });
 
   const newVote = await getVoteHash(

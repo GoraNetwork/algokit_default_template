@@ -177,7 +177,7 @@ export async function deploy_delegator_with_mock_main(testAsset: number)
     signer: sandboxAccount.signer,
     sender: sandboxAccount.addr,
   });
-  let appCreateResults = await sandboxMockMainClient.create();
+  let appCreateResults = await sandboxMockMainClient._create();
   const mockMainID = appCreateResults.appId;
   const mockMainAddress = appCreateResults.appAddress;
     
@@ -195,14 +195,14 @@ export async function deploy_delegator_with_mock_main(testAsset: number)
   sandboxAppClient.approvalProgram = approvalProgram;
   sandboxAppClient.clearProgram = clearProgram;
     
-  appCreateResults = await sandboxAppClient.create({extraPages: 1});
+  appCreateResults = await sandboxAppClient._create({extraPages: 1});
   const appId  = appCreateResults.appId;
   const appAddress = appCreateResults.appAddress;
 
     
   await sendGenericPayment(sandboxAccount.signer, sandboxAccount.addr, mockMainAddress, 1e6);
   await sendGenericPayment(sandboxAccount.signer, sandboxAccount.addr, appAddress, 1e6);
-  await sandboxMockMainClient.optIn();
+  await sandboxMockMainClient._optIn();
   await sandboxMockMainClient.init_app({asset: BigInt(testAsset)});
   await sandboxAppClient.init_app({asset: BigInt(testAsset), timelock: BigInt(10), main_app_id: BigInt(mockMainID), manager_address: sandboxAccount.addr, manager_algo_share: BigInt(0), manager_gora_share: BigInt(0)});
 

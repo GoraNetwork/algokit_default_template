@@ -1,7 +1,7 @@
 import { ABIUintType, Account, decodeAddress, encodeUint64, generateAccount, makeAssetConfigTxnWithSuggestedParams, makeAssetCreateTxnWithSuggestedParamsFromObject, makeAssetTransferTxnWithSuggestedParamsFromObject, makeBasicAccountTransactionSigner, makePaymentTxnWithSuggestedParamsFromObject, waitForConfirmation } from "algosdk";
 import * as bkr from "beaker-ts";
 
-import { SandboxAccount } from "beaker-ts/lib/sandbox/accounts";
+import { SandboxAccount } from "beaker-ts/src/sandbox/accounts";
 import { Vesting } from "../artifacts/vesting_client";
 import { sendGenericAsset, sendGenericPayment } from "../../../utils/beaker_test_utils";
 import { getAppBoxes, getGlobal, getVestings } from "../vestingUtils";
@@ -68,7 +68,7 @@ describe("Vesting Tests", () => {
       signer: sandboxAccount.signer,
       sender: sandboxAccount.addr,
     });
-    const appCreateResults = await sandboxAppClient.create({extraPages: 1});
+    const appCreateResults = await sandboxAppClient._create({extraPages: 1});
     appId  = appCreateResults.appId;
     appAddress = appCreateResults.appAddress;
 
@@ -86,7 +86,7 @@ describe("Vesting Tests", () => {
   
   it("unable to delete the app", async () => {
     await sendGenericPayment(sandboxAccount.signer, sandboxAccount.addr, appAddress, 1e6);
-    await expect(sandboxAppClient.delete()).rejects.toThrow("transaction rejected by ApprovalProgram");
+    await expect(sandboxAppClient._delete()).rejects.toThrow("transaction rejected by ApprovalProgram");
   });
 
   it("able to vest tokens to user", async () => {
@@ -157,7 +157,7 @@ describe("Vesting Tests", () => {
     const initialAssetBalance_pre = asset_info_result["asset-holding"]["amount"];
 
     // Wait halfway through vesting period
-    await sleep_rounds(1, sandboxAccount)
+    await sleep_rounds(1, sandboxAccount);
 
     // devnet iterates 25 seconds per transaction, should be able to get 50% here
     asset_info_result = await sandboxAppClient.client.accountAssetInformation(users[1].addr, testAsset).do();
@@ -316,7 +316,7 @@ describe("Vesting Tests", () => {
       sender: users[1].addr,
       appId: delegator_app_id
     });
-    await userDelegatorClient.optIn();
+    await userDelegatorClient._optIn();
 
     const delegator_global_state = await delegatorGetGlobal(delegator_app_id);
     const whitelist_name = new ABIUintType(64).encode(delegator_app_id);
@@ -363,7 +363,13 @@ describe("Vesting Tests", () => {
     );
     let asset_info_result = await userClient.client.accountAssetInformation(main_app_addr, testAsset).do();
     const main_assetBalance_pre = asset_info_result["asset-holding"]["amount"];
-
+    let sp = await userDelegatorClient.client.getTransactionParams().do();
+    sp = {
+      ...sp,
+      flatFee: true,
+      fee: 2000
+    };
+    
     const foo = await userClient.stake_to_delegator({
       delegator: BigInt(delegator_app_id),
       key_hash: key_hash,
@@ -372,6 +378,7 @@ describe("Vesting Tests", () => {
       manager_reference: delegator_global_state["manager_address"]
     },
     {
+      "suggestedParams": sp,
       boxes: [
         {
           name: vestingKey,
@@ -392,12 +399,7 @@ describe("Vesting Tests", () => {
 
     // wait out goracle timeout
     await sleep_rounds(10, sandboxAccount);
-    let sp = await userDelegatorClient.client.getTransactionParams().do();
-    sp = {
-      ...sp,
-      flatFee: true,
-      fee: 2000
-    };
+
     await userDelegatorClient.manual_process_aggregation(
       {
         asset_reference: BigInt(testAsset),
@@ -419,6 +421,9 @@ describe("Vesting Tests", () => {
         main_app_ref: BigInt(main_app_id),
         asset_reference: BigInt(testAsset),
         manager_reference: delegator_global_state["manager_address"]
+      },
+      {
+        "suggestedParams": sp
       }
     );
 
@@ -466,6 +471,7 @@ describe("Vesting Tests", () => {
         manager_reference: delegator_global_state["manager_address"]
       },
       {
+        "suggestedParams": sp,
         boxes: [
           {
             name: vestingKey,

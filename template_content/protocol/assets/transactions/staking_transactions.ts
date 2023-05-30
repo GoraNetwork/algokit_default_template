@@ -31,7 +31,11 @@ type UnstakeParams = {
 
 export function unstake(unstakeParams: UnstakeParams){
   const stakingGroup = new AtomicTransactionComposer();
-
+  const suggestedParams = {
+    ...unstakeParams.suggestedParams,
+    flatFee: true,
+    fee: 2000
+  };
   stakingGroup.addMethodCall({
     method: getMethodByName("unstake", stakingContract),
     methodArgs: [
@@ -41,7 +45,7 @@ export function unstake(unstakeParams: UnstakeParams){
     sender: unstakeParams.user.addr,
     signer: makeBasicAccountTransactionSigner(unstakeParams.user),
     appID: unstakeParams.appId,
-    suggestedParams: unstakeParams.suggestedParams
+    suggestedParams: suggestedParams
   });
 
   return stakingGroup;
@@ -52,7 +56,7 @@ type StakeParams = {
   user: Account, 
   appId: number, 
   suggestedParams: SuggestedParams,
-  amount: number
+  amount: number | bigint
 }
 
 export function stake(stakeParams: StakeParams){
@@ -184,6 +188,11 @@ type WithdrawParams = {
 
 export function withdrawToken(withdrawParams: WithdrawParams){
   const withdrawGroup = new AtomicTransactionComposer();
+  const suggestedParams = {
+    ...withdrawParams.suggestedParams,
+    flatFee: true,
+    fee: 2000
+  };
 
   withdrawGroup.addMethodCall({
     method: getMethodByName("withdraw_token", stakingContract),
@@ -194,7 +203,7 @@ export function withdrawToken(withdrawParams: WithdrawParams){
     sender: withdrawParams.user.addr,
     signer: makeBasicAccountTransactionSigner(withdrawParams.user),
     appID: withdrawParams.appId,
-    suggestedParams: withdrawParams.suggestedParams
+    suggestedParams: suggestedParams
   });
 
   return withdrawGroup;
@@ -209,7 +218,11 @@ type WithdrawAlgoParams = {
 
 export function withdrawAlgo(withdrawParams: WithdrawAlgoParams){
   const withdrawGroup = new AtomicTransactionComposer();
-
+  const suggestedParams = {
+    ...withdrawParams.suggestedParams,
+    flatFee: true,
+    fee: 2000
+  };
   withdrawGroup.addMethodCall({
     method: getMethodByName("withdraw_algo", stakingContract),
     methodArgs: [
@@ -218,7 +231,7 @@ export function withdrawAlgo(withdrawParams: WithdrawAlgoParams){
     sender: withdrawParams.user.addr,
     signer: makeBasicAccountTransactionSigner(withdrawParams.user),
     appID: withdrawParams.appId,
-    suggestedParams: withdrawParams.suggestedParams
+    suggestedParams: suggestedParams
   });
 
   return withdrawGroup;

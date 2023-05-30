@@ -10,6 +10,8 @@ import {
 import {
   loadABIContract,
   parseAppState,
+  sendASA,
+  optIn
 } from "algoutils";
 import {
   fundAccount
@@ -26,15 +28,21 @@ import {
 import {
   requestRefund,
   userOptOut,
-  update_protocol_settings
+  update_protocol_settings,
+  userOptIn,
 } from "../../../assets/transactions/main_transactions";
 
 import {
   deleteBox,
   deregisterVoter,
+  registerVoter
 } from "../../../assets/transactions/vote_transactions";
 import {
-  claimRewards
+  claimRewards,
+  depositAlgo,
+  depositToken,
+  stake,
+  registerKey,
 } from "../../../assets/transactions/staking_transactions";
 import {
   testVote,
@@ -44,8 +52,6 @@ import {
   DestinationType,
   LocalHistoryType,
   RequestArgsType,
-  ResponseBodyType,
-  StakeArrayType,
 } from "../../../utils/abi_types";
 import {
   beforeEachVotingTest,
@@ -72,11 +78,13 @@ describe("Deploy Voting Contracts e2e", () => {
   let votingAppId: number;
   let mainAppId: number;
   let destinationAppId: number;
+  let platformTokenAssetId: number;
   let algodClient: Algodv2;
   let voteVerifyLsig: LogicSigAccount;
   let user: Account;
+  let alt_user: Account;
+  let mainAccount: Account;
   let current_request_round: any;
-  let network: number;
   // TODO: parameterize and pass into main contract deployment
   let TIME_LOCK: number;
   let goraRequestFee: number;
@@ -92,7 +100,48 @@ describe("Deploy Voting Contracts e2e", () => {
 
     testState = await beforeEachVotingTest(accountGenerator);
     // flatten the testState object
-    ({ current_request_round, votingAppId, mainAppId, destinationAppId, algodClient, voteVerifyLsig, user, network, TIME_LOCK, goraRequestFee, algoRequestFee, requestBoxCost, VOTE_REFILL_THRESHOLD, VOTE_REFILL_AMOUNT } = testState);
+    ({ current_request_round, votingAppId, mainAppId, destinationAppId, platformTokenAssetId, algodClient, voteVerifyLsig, user, alt_user, mainAccount, TIME_LOCK, goraRequestFee, algoRequestFee, requestBoxCost, VOTE_REFILL_THRESHOLD, VOTE_REFILL_AMOUNT } = testState);
+  });
+  
+  it("should reject if lsig is paying a txn fee", async () => {
+    const voters = generateUsers(accountGenerator,3);
+
+    for (const voter of voters) {
+      testState.ephemeral_map = await test_optin(voter, mainAppId, testState, accountGenerator);
+    }
+    await waitForRounds(TIME_LOCK + 1);
+    for (const voter of voters) {
+      await voter_setup(voter, mainAppId, votingAppId, testState);
+    }
+    await waitForRounds(TIME_LOCK + 1);
+    // print ephemeral map
+    const participationAccount = testState.ephemeral_map.get(voters[2].addr);
+    let result;
+    ({ result, current_request_round, request_map: testState.request_map, suggestedParams: testState.suggestedParams } = await submit_test_request(voters[0], undefined, testState));
+    const key_hash = result.methodResults[0].txInfo!.txn.txn.apbx[0].n;
+    const suggestedParams = await algodClient.getTransactionParams().do();
+    if (!participationAccount) {
+      throw new Error("Participation account does not exist for voter");
+    }
+
+    //propose the request
+    const vote = testVote({
+      algodClient,
+      voter: participationAccount,
+      userVote: encodeUint64(10),
+      mainAppId,
+      votingAppId,
+      destinationAppId,
+      requesterAddress: voters[0].addr,
+      primaryAccount: voters[2].addr,
+      methodSelector: consumerMethod,
+      requestRound: testState.request_map.get(voters[0].addr),
+      voteVerifyLsig,
+      timelock: TIME_LOCK,
+      request_key_hash: key_hash,
+      voteVerifyParams: suggestedParams
+    });
+    expect(async() => await vote).rejects.toThrowError("rejected by logic err=assert failed");
   });
 
   it("should allow a requester to refund request outside of the request timeout", async () => {
@@ -130,7 +179,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: voters[2].addr,
       methodSelector: consumerMethod,
       requestRound: testState.request_map.get(voters[0].addr),
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -182,7 +230,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: voters[3].addr,
       methodSelector: consumerMethod,
       requestRound: testState.request_map.get(voters[1].addr),
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -321,7 +368,6 @@ describe("Deploy Voting Contracts e2e", () => {
         primaryAccount: voter.addr,
         methodSelector: consumerMethod,
         requestRound: testState.request_map.get(requesters[0].addr),
-        network: network,
         voteVerifyLsig,
         timelock: TIME_LOCK,
         request_key_hash: key_hash
@@ -349,7 +395,6 @@ describe("Deploy Voting Contracts e2e", () => {
           primaryAccount: randomUsers[0].addr,
           methodSelector: consumerMethod,
           requestRound: testState.request_map.get(requesters[1].addr),
-          network: network,
           voteVerifyLsig,
           timelock: TIME_LOCK,
           request_key_hash: key_hash
@@ -426,7 +471,6 @@ describe("Deploy Voting Contracts e2e", () => {
       requestRound: current_request_round,
       primaryAccount: deregisterAccount.addr,
       methodSelector: consumerMethod,
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -456,7 +500,6 @@ describe("Deploy Voting Contracts e2e", () => {
       requestRound: current_request_round,
       primaryAccount: voters[1].addr,
       methodSelector: consumerMethod,
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -499,7 +542,6 @@ describe("Deploy Voting Contracts e2e", () => {
         primaryAccount: voter.addr,
         methodSelector: consumerMethod,
         requestRound: testState.request_map.get(requesters[0].addr),
-        network: network,
         voteVerifyLsig,
         timelock: TIME_LOCK,
         request_key_hash: key_hash
@@ -539,7 +581,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: randomUsers[0].addr,
       methodSelector: consumerMethod,
       requestRound: testState.request_map.get(requesters[1].addr),
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -601,7 +642,7 @@ describe("Deploy Voting Contracts e2e", () => {
 
     const state = await getGlobalStateMain(mainAppId, algodClient);
   
-    VOTE_REFILL_THRESHOLD = 550;
+    VOTE_REFILL_THRESHOLD = 100_000;
     VOTE_REFILL_AMOUNT = 4;
     const upsGroup = update_protocol_settings(
       {
@@ -664,7 +705,6 @@ describe("Deploy Voting Contracts e2e", () => {
         primaryAccount: voter.addr,
         methodSelector: consumerMethod,
         requestRound: current_request_round,
-        network: network,
         voteVerifyLsig,
         timelock: TIME_LOCK,
         request_key_hash: key_hash
@@ -692,7 +732,6 @@ describe("Deploy Voting Contracts e2e", () => {
         primaryAccount: voter.addr,
         methodSelector: consumerMethod,
         requestRound: current_request_round,
-        network: network,
         voteVerifyLsig,
         timelock: TIME_LOCK,
         request_key_hash: key_hash
@@ -752,7 +791,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: adversary[1].addr,
       methodSelector: consumerMethod,
       requestRound: current_request_round,
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -779,7 +817,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: adversary[0].addr,
       methodSelector: consumerMethod,
       requestRound: current_request_round,
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash,
@@ -798,12 +835,10 @@ describe("Deploy Voting Contracts e2e", () => {
         throw new Error("Participation account does not exist for voter");
       }
 
-      let refill_claim = false;
       let accountInfo = await algodClient.accountInformation(getApplicationAddress(votingAppId)).do();
       let former_amount = 0;
       if (accountInfo.amount - accountInfo["min-balance"] < (VOTE_REFILL_THRESHOLD * 1000)) // test if vote contract gas refill is going to happen
       {
-        refill_claim = true;
         former_amount = accountInfo.amount;
       }
       const voterStatePre = await getLocalStateMain(voter.addr, mainAppId, algodClient);
@@ -819,7 +854,6 @@ describe("Deploy Voting Contracts e2e", () => {
         primaryAccount: voter.addr,
         requestRound: current_request_round,
         methodSelector: consumerMethod,
-        network: network,
         voteVerifyLsig,
         timelock: TIME_LOCK,
         request_key_hash: key_hash
@@ -837,10 +871,8 @@ describe("Deploy Voting Contracts e2e", () => {
 
       accountInfo = await algodClient.accountInformation(voter.addr).do();
 
-      if (refill_claim === true) {
-        accountInfo = await algodClient.accountInformation(getApplicationAddress(votingAppId)).do();
-        expect(accountInfo.amount - former_amount).toBe(1000 * (VOTE_REFILL_AMOUNT - 1));
-      }
+      accountInfo = await algodClient.accountInformation(getApplicationAddress(votingAppId)).do();
+      expect(accountInfo.amount - former_amount).toBe(1000 * (VOTE_REFILL_AMOUNT - 1));
     }
     requester_info = await getLocalStateMain(requester.addr, mainAppId, algodClient);
 
@@ -865,7 +897,6 @@ describe("Deploy Voting Contracts e2e", () => {
       primaryAccount: adversary[0].addr,
       methodSelector: consumerMethod,
       requestRound: current_request_round,
-      network: network,
       voteVerifyLsig,
       timelock: TIME_LOCK,
       request_key_hash: key_hash
@@ -873,6 +904,250 @@ describe("Deploy Voting Contracts e2e", () => {
 
     evil_state_post = await getLocalStateMain(adversary[0].addr, mainAppId, algodClient);
     expect(evil_state_post.account_token_amount).toEqual(evil_state_pre.account_token_amount);
+  });
+
+  it("should allow rewards for coexisting minimum and maximum stake", async () => {
+    const whale = accountGenerator.generateAccount();
+    const shrimp = accountGenerator.generateAccount();
+    const requester = accountGenerator.generateAccount();
+
+    // empty default accounts
+    await sendASA({
+      from: user,
+      to: mainAccount.addr,
+      assetId: platformTokenAssetId,
+      amount: 50_000_000_000_000
+    });
+    await sendASA({
+      from: alt_user,
+      to: mainAccount.addr,
+      assetId: platformTokenAssetId,
+      amount: 50_000_000_000_000
+    });
+
+    // set up requester with 1 GORA
+    const suggestedParams = await testState.algodClient.getTransactionParams().do();
+    const optInGroup = userOptIn({ user: requester, appId: mainAppId, suggestedParams: suggestedParams });
+    await optInGroup.execute(testState.algodClient, 5);
+
+    const requesterGora = 2_000_000_000;
+    await fundAccount(requester.addr, 1e9);
+    await optIn(testState.platformTokenAssetId, requester);
+    await sendASA({
+      from: testState.mainAccount,
+      to: requester.addr,
+      assetId: testState.platformTokenAssetId,
+      amount: requesterGora
+    });
+
+    const depositAlgoGroup = depositAlgo({
+      user: requester,
+      appId: mainAppId,
+      suggestedParams: await testState.algodClient.getTransactionParams().do(),
+      amount: 1e9
+    });
+  
+    await depositAlgoGroup.execute(testState.algodClient, 5);
+  
+    const depositTokenGroup = depositToken({
+      platformTokenAssetId: testState.platformTokenAssetId,
+      user: requester,
+      appId: mainAppId,
+      suggestedParams: await testState.algodClient.getTransactionParams().do(),
+      amount: requesterGora
+    });
+  
+    await depositTokenGroup.execute(testState.algodClient, 5);
+
+    // min stake is 10,000 GORA
+    const min_stake = 10_000_000_000_000;
+    await fundAccount(shrimp.addr, 1e9);
+    await optIn(testState.platformTokenAssetId, shrimp);
+    await sendASA({
+      from: testState.mainAccount,
+      to: shrimp.addr,
+      assetId: testState.platformTokenAssetId,
+      amount: min_stake
+    });
+
+    const shrimpParticipationAccount = accountGenerator.generateAccount();
+
+    let ephemeral_map_new = new Map(testState.ephemeral_map);
+    ephemeral_map_new.set(shrimp.addr, shrimpParticipationAccount);
+    await fundAccount(shrimpParticipationAccount.addr, 1_500_000);
+
+    //opt ephemeral account into staking contract
+    const shrimpPartOptInGroup = userOptIn({ user: shrimpParticipationAccount, appId: mainAppId, suggestedParams: await testState.algodClient.getTransactionParams().do() });
+    await shrimpPartOptInGroup.execute(testState.algodClient, 5);
+
+    //opt main account into staking contract
+    const shrimpOptInGroup = userOptIn({ user: shrimp, appId: mainAppId, suggestedParams: await testState.algodClient.getTransactionParams().do() });
+    await shrimpOptInGroup.execute(testState.algodClient, 5);
+
+    const registerGroup = registerKey({
+      user: shrimp,
+      appId: mainAppId,
+      publicKey: shrimpParticipationAccount.addr,
+      suggestedParams: await testState.algodClient.getTransactionParams().do()
+    });
+    await registerGroup.execute(testState.algodClient, 5);
+
+    //register ephemeral account into voting contract
+    const shrimpRegisterVoterGroup = registerVoter({
+      user: shrimpParticipationAccount,
+      primaryAccount: shrimp.addr,
+      votingAppId: votingAppId,
+      mainAppId: mainAppId,
+      suggestedParams: await testState.algodClient.getTransactionParams().do()
+    });
+    await shrimpRegisterVoterGroup.execute(testState.algodClient, 5);
+
+    const shrimpStakeGroup = stake({
+      platformTokenAssetId,
+      user: shrimp,
+      amount: min_stake,
+      suggestedParams: await testState.algodClient.getTransactionParams().do(),
+      appId: mainAppId
+    });
+
+    await shrimpStakeGroup.execute(testState.algodClient, 5);
+
+    // max stake is 100,000,000 - 10,000 - 2 = 99989999
+    const whaleStake = BigInt(100_000_000_000_000_000) - BigInt(min_stake) - BigInt(requesterGora);  //99_989_990_000_000_000;
+    await fundAccount(whale.addr, 1e9);
+    await optIn(testState.platformTokenAssetId, whale);
+    await sendASA({
+      from: testState.mainAccount,
+      to: whale.addr,
+      assetId: testState.platformTokenAssetId,
+      amount: whaleStake
+    });
+
+    const whaleParticipationAccount = accountGenerator.generateAccount();
+
+    ephemeral_map_new = new Map(testState.ephemeral_map);
+    ephemeral_map_new.set(whale.addr, whaleParticipationAccount);
+    await fundAccount(whaleParticipationAccount.addr, 1_500_000);
+
+    //opt ephemeral account into staking contract
+    const whalePartOptInGroup = userOptIn({ user: whaleParticipationAccount, appId: mainAppId, suggestedParams: await testState.algodClient.getTransactionParams().do() });
+    await whalePartOptInGroup.execute(testState.algodClient, 5);
+
+    //opt main account into staking contract
+    const whaleOptInGroup = userOptIn({ user: whale, appId: mainAppId, suggestedParams: await testState.algodClient.getTransactionParams().do() });
+    await whaleOptInGroup.execute(testState.algodClient, 5);
+
+    const whaleRegisterGroup = registerKey({
+      user: whale,
+      appId: mainAppId,
+      publicKey: whaleParticipationAccount.addr,
+      suggestedParams: await testState.algodClient.getTransactionParams().do()
+    });
+    await whaleRegisterGroup.execute(testState.algodClient, 5);
+
+    //register ephemeral account into voting contract
+    const whaleRegisterVoterGroup = registerVoter({
+      user: whaleParticipationAccount,
+      primaryAccount: whale.addr,
+      votingAppId: votingAppId,
+      mainAppId: mainAppId,
+      suggestedParams: await testState.algodClient.getTransactionParams().do()
+    });
+    await whaleRegisterVoterGroup.execute(testState.algodClient, 5);
+
+    const whaleStakeGroup = stake({
+      platformTokenAssetId,
+      user: whale,
+      amount: whaleStake,
+      suggestedParams: await testState.algodClient.getTransactionParams().do(),
+      appId: mainAppId
+    });
+
+    await whaleStakeGroup.execute(testState.algodClient, 5);
+
+    // wait few rounds for voters keys to become valid
+    await waitForRounds(TIME_LOCK);
+
+    // make request
+    let request_result;
+    ({ result: request_result, current_request_round, request_map: testState.request_map, suggestedParams: testState.suggestedParams } = await submit_test_request(requester, undefined, testState));
+    let key_hash = request_result.methodResults[0].txInfo!.txn.txn.apbx[0].n;
+
+    // shrimp votes
+    await testVote({
+      algodClient,
+      voter: shrimpParticipationAccount,
+      userVote: encodeUint64(1),
+      mainAppId,
+      votingAppId,
+      destinationAppId,
+      requesterAddress: requester.addr,
+      primaryAccount: shrimp.addr,
+      methodSelector: consumerMethod,
+      requestRound: current_request_round,
+      voteVerifyLsig,
+      timelock: TIME_LOCK,
+      request_key_hash: key_hash,
+    });
+
+    // whale votes
+    await testVote({
+      algodClient,
+      voter: whaleParticipationAccount,
+      userVote: encodeUint64(1),
+      mainAppId,
+      votingAppId,
+      destinationAppId,
+      requesterAddress: requester.addr,
+      primaryAccount: whale.addr,
+      methodSelector: consumerMethod,
+      requestRound: current_request_round,
+      voteVerifyLsig,
+      timelock: TIME_LOCK,
+      request_key_hash: key_hash,
+    });
+
+    request_result;
+    ({ result: request_result, current_request_round, request_map: testState.request_map, suggestedParams: testState.suggestedParams } = await submit_test_request(requester, "test", testState));
+    key_hash = request_result.methodResults[0].txInfo!.txn.txn.apbx[0].n;
+
+    // whale votes and claims rewards
+    await testVote({
+      algodClient,
+      voter: whaleParticipationAccount,
+      userVote: encodeUint64(1),
+      mainAppId,
+      votingAppId,
+      destinationAppId,
+      requesterAddress: requester.addr,
+      primaryAccount: whale.addr,
+      methodSelector: consumerMethod,
+      requestRound: current_request_round,
+      voteVerifyLsig,
+      timelock: TIME_LOCK,
+      request_key_hash: key_hash,
+    });
+
+    // shrimp claims rewards
+    const shrimpClaimRewardsGroup = await claimRewards({
+      primaryAccount: shrimp,
+      rewardsAddress: shrimp.addr,
+      appId: mainAppId,
+      votingAppId: votingAppId,
+      suggestedParams: suggestedParams,
+      client: algodClient
+    });
+    await shrimpClaimRewardsGroup.execute(algodClient, 5);
+
+    const shrimpLocalStateMain = await getLocalStateMain(shrimp.addr, mainAppId, algodClient);
+
+    const whaleLocalStateMain = await getLocalStateMain(whale.addr, mainAppId, algodClient);
+
+    expect(shrimpLocalStateMain.account_algo).toEqual(1);
+    expect(shrimpLocalStateMain.account_token_amount).toEqual(100000);
+
+    expect(whaleLocalStateMain.account_algo).toEqual(9998);
+    expect(whaleLocalStateMain.account_token_amount).toEqual(999899000);
   });
 
 });

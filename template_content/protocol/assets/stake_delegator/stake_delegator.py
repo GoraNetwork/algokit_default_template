@@ -26,6 +26,7 @@ MLKEYMAP = protocol_key_map['main_local']
 GORA_TOKEN_ID = Int(0)
 MAIN_APP_ID = Int(0)
 MAIN_APP_ADDRESS = Bytes("")
+op_up_ensure_budget = Int(550)
 class StakeDelegator(Application):
     def __init__(self, version: int, ):
         super().__init__(version)
@@ -64,7 +65,7 @@ class StakeDelegator(Application):
     )
     global_most_recent_aggregation: Final[ApplicationStateValue] = ApplicationStateValue(
         stack_type=TealType.bytes,
-        default=Bytes(AggregationAlgoSdk.encode([1, RewardsTrackerAlgoSdk.encode([0, 0]), False])),
+        default=Bytes(AggregationAlgoSdk.encode([1, RewardsTrackerAlgoSdk.encode([0, 0, 0, 0]), False])),
         descr="keeps info about the most recently completed aggregation",
         key=GKEYMAP['global_most_recent_aggregation'],
         static=False,
@@ -121,14 +122,14 @@ class StakeDelegator(Application):
     )
     local_non_stake: Final[AccountStateValue] = AccountStateValue(
         stack_type=TealType.bytes,
-        default=Bytes(RewardsTrackerAlgoSdk.encode([0, 0])),
+        default=Bytes(RewardsTrackerAlgoSdk.encode([0, 0, 0, 0])),
         descr="Total token in account that is not staked, due to it being a result of a withdrawal aggregation or rewards",
         key=LKEYMAP['local_non_stake'],
         static=False,
     )
     aggregation_tracker: Final[AccountStateValue] = AccountStateValue(
         stack_type=TealType.bytes,
-        default= Bytes(LocalAggregationTrackerAlgoSdk.encode([[0, [0, 0]] , 0, False])),
+        default= Bytes(LocalAggregationTrackerAlgoSdk.encode([[0, [0, 0, 0, 0]] , 0, False])),
         descr="information to assist with tracking users contribution since aggregations can be delayed",
         key=LKEYMAP['local_aggregation_tracker'],
         static=False,
@@ -172,6 +173,14 @@ class StakeDelegator(Application):
     ):
         return Seq([
             self.initialize_application_state(),
+        ])
+    
+    @update
+    def update(
+        self
+    ):
+        return Seq([
+            Reject()
         ])
     
     @external(authorize=Authorize.only(Global.creator_address()))
@@ -239,8 +248,10 @@ class StakeDelegator(Application):
             If(aggregation_round_round.get() != Int(0)).
                 Then(Seq([
                     (local_non_stake := RewardsTracker()).decode(self.local_non_stake[self.userAddr.load()].get()),
-                    (algo_non_stake := abi.Uint64()).set(local_non_stake.algo_rewards),
-                    (gora_non_stake := abi.Uint64()).set(local_non_stake.gora_rewards),
+                    (algo_rewards := abi.Uint64()).set(local_non_stake.algo_rewards),
+                    (gora_rewards := abi.Uint64()).set(local_non_stake.gora_rewards),
+                    (algo_non_stake := abi.Uint64()).set(local_non_stake.algo_non_stake),
+                    (gora_non_stake := abi.Uint64()).set(local_non_stake.gora_non_stake),
 
                     If(is_stake.get()).Then(Seq([
                         (updated_stake := abi.Uint64()).set(gora_non_stake.get() - amount.get()),
@@ -253,8 +264,9 @@ class StakeDelegator(Application):
 
                         self.local_stake[self.userAddr.load()].set(BytesMinus(self.local_stake[self.userAddr.load()].get(), Itob(amount.get()))),
                     ])),
-                    local_non_stake.set(algo_non_stake, updated_stake),
+                    local_non_stake.set(algo_rewards, gora_rewards, algo_non_stake, updated_stake),
                     self.local_non_stake[self.userAddr.load()].set(local_non_stake.encode()),
+                    self.update_local_aggreagtion_tracker(Int(0), Int(0)),
             ])),
             Return(adjustment.load())
         ])
@@ -284,21 +296,24 @@ class StakeDelegator(Application):
             (share_algo := abi.Uint64()).set(possible_account_rewards.algo_rewards),
             (share_gora := abi.Uint64()).set(possible_account_rewards.gora_rewards),
 
-            #get non stake that is currently in your account
-            (old_non_stake := RewardsTracker()).decode(self.local_non_stake[self.userAddr.load()].get()),
-            (old_non_stake_algo := abi.Uint64()).set(old_non_stake.algo_rewards),
-            (old_non_stake_gora := abi.Uint64()).set(old_non_stake.gora_rewards),
+            #get rewards that is currently in your account
+            (old_rewards := RewardsTracker()).decode(self.local_non_stake[self.userAddr.load()].get()),
+            (old_rewards_algo := abi.Uint64()).set(old_rewards.algo_rewards),
+            (old_rewards_gora := abi.Uint64()).set(old_rewards.gora_rewards),
+
+            (old_non_stake_algo := abi.Uint64()).set(old_rewards.algo_non_stake),
+            (old_non_stake_gora := abi.Uint64()).set(old_rewards.gora_non_stake),
             
             #new rewards would be old + new
-            (new_share_algo := abi.Uint64()).set(old_non_stake_algo.get() + share_algo.get()),
-            (new_share_gora := abi.Uint64()).set(old_non_stake_gora.get() + share_gora.get()),
-            (total_account_rewards := RewardsTracker()).set(new_share_algo, new_share_gora),
+            (new_share_algo := abi.Uint64()).set(old_rewards_algo.get() + share_algo.get()),
+            (new_share_gora := abi.Uint64()).set(old_rewards_gora.get() + share_gora.get()),
+            (total_account_rewards := RewardsTracker()).set(new_share_algo, new_share_gora, old_non_stake_algo, old_non_stake_gora),
 
             self.local_non_stake[self.userAddr.load()].set(total_account_rewards.encode()),
             (round_info := TimeoutTracker()).decode(self.global_aggregation_round.get()),
             (current_round := abi.Uint64()).set(round_info.aggregation_round),
 
-            time_since_last_update.store( current_round.get() - self.last_update_time[self.userAddr.load()].get() ),
+            time_since_last_update.store(current_round.get() - self.last_update_time[self.userAddr.load()].get() ),
             self.last_update_time[self.userAddr.load()].set(current_round.get()),
         ])
     
@@ -348,15 +363,19 @@ class StakeDelegator(Application):
             self.assertActionTiming(),
             Assert(asset_pay.get().xfer_asset() == GORA_TOKEN_ID),
             self.update_stake_time(),
+            opup.ensure_budget(op_up_ensure_budget, fee_source=OpUpFeeSource.GroupCredit),
             self.pending_deposits.set(BytesAdd(self.pending_deposits.get(), Itob(asset_pay.get().asset_amount()))),
             self.update_local_aggreagtion_tracker(asset_pay.get().asset_amount(), Int(1)),
 
             #update non stake (it doesn't get counted as "official stake" until the aggregation round ends in a deposit)
             (local_non_stake := RewardsTracker()).decode(self.local_non_stake[self.userAddr.load()].get()),
-            (algo_non_stake := abi.Uint64()).set(local_non_stake.algo_rewards),
-            (gora_non_stake := abi.Uint64()).set(local_non_stake.gora_rewards),
+            (algo_non_stake := abi.Uint64()).set(local_non_stake.algo_non_stake),
+            (gora_non_stake := abi.Uint64()).set(local_non_stake.gora_non_stake),
+            (algo_rewards := abi.Uint64()).set(local_non_stake.algo_rewards),
+            (gora_rewards := abi.Uint64()).set(local_non_stake.gora_rewards),
+
             gora_non_stake.set(gora_non_stake.get() + asset_pay.get().asset_amount()),
-            local_non_stake.set(algo_non_stake, gora_non_stake),
+            local_non_stake.set(algo_rewards, gora_rewards, algo_non_stake, gora_non_stake),
             self.local_non_stake[self.userAddr.load()].set(local_non_stake.encode()),
 
             self.post_action_update()
@@ -388,7 +407,7 @@ class StakeDelegator(Application):
 
             self.assertActionTiming(),
             self.update_stake_time(),
-            
+            opup.ensure_budget(op_up_ensure_budget, fee_source=OpUpFeeSource.GroupCredit),
             self.pending_withdrawals.set(BytesAdd(self.pending_withdrawals.get(), Itob(amount_to_withdraw.get()))),
             self.update_local_aggreagtion_tracker(amount_to_withdraw.get(), Int(0)),
 
@@ -440,11 +459,14 @@ class StakeDelegator(Application):
             (current_funds := RewardsTracker()).decode(self.local_non_stake[self.userAddr.load()].get()),
             (algo_to_withdraw := abi.Uint64()).set(current_funds.algo_rewards),
             (gora_to_withdraw := abi.Uint64()).set(current_funds.gora_rewards),
+
+            (algo_non_stake:= abi.Uint64()).set(current_funds.algo_non_stake),
+            (gora_non_stake := abi.Uint64()).set(current_funds.gora_non_stake),
             self.send_algo(Txn.sender(), algo_to_withdraw.get()),
             self.send_asset(GORA_TOKEN_ID, Txn.sender(), gora_to_withdraw.get()),
             algo_to_withdraw.set(0),
             gora_to_withdraw.set(0),
-            current_funds.set(algo_to_withdraw, gora_to_withdraw),
+            current_funds.set(algo_to_withdraw, gora_to_withdraw, algo_non_stake, gora_non_stake),
             self.local_non_stake[self.userAddr.load()].set(current_funds.encode()),
             self.update_local_aggreagtion_tracker(Int(0), Int(0)),
         ])
@@ -460,7 +482,7 @@ class StakeDelegator(Application):
             get_unclaimed_rewards_algo,
             get_unclaimed_rewards_gora,
             
-            opup.ensure_budget(Int(550)),
+            opup.ensure_budget(op_up_ensure_budget, fee_source=OpUpFeeSource.GroupCredit),
             If(get_unclaimed_rewards_algo.value() > Int(0)).Then(
                 withdraw_algo(MAIN_APP_ID, Itob(get_unclaimed_rewards_algo.value())),
             ),
@@ -476,11 +498,15 @@ class StakeDelegator(Application):
                         (manager_historacle_account_rewards := RewardsTracker()).decode(self.local_non_stake[self.manager.get()].get()),
                         (manager_historacle_algo := abi.Uint64()).set(manager_historacle_account_rewards.algo_rewards),
                         (manager_historacle_gora := abi.Uint64()).set(manager_historacle_account_rewards.gora_rewards),
+
+                        (manager_historacle_nonstake_algo := abi.Uint64()).set(manager_historacle_account_rewards.algo_non_stake),
+                        (manager_historacle_nonstake_gora := abi.Uint64()).set(manager_historacle_account_rewards.gora_non_stake),
+
                         manager_share_algo.set((get_unclaimed_rewards_algo.value() * self.manager_algo_share.get()) / Int(1000)),
                         manager_share_gora.set((get_unclaimed_rewards_gora.value() * self.manager_gora_share.get()) / Int(1000)),
                         (manager_algo := abi.Uint64()).set(manager_historacle_algo.get() + manager_share_algo.get()),
                         (manager_gora := abi.Uint64()).set(manager_historacle_gora.get() + manager_share_gora.get()),
-                        (manager_account_rewards := RewardsTracker()).set(manager_algo, manager_gora),
+                        (manager_account_rewards := RewardsTracker()).set(manager_algo, manager_gora, manager_historacle_nonstake_algo, manager_historacle_nonstake_gora),
                         self.local_non_stake[self.manager.get()].set(manager_account_rewards.encode()),
                     ])
                 ),
@@ -488,10 +514,12 @@ class StakeDelegator(Application):
             (rewards_accumulation := RewardsTracker()).set(round_info.rewards_this_round),
             (historacle_algo := abi.Uint64()).set(rewards_accumulation.algo_rewards),
             (historacle_gora := abi.Uint64()).set(rewards_accumulation.gora_rewards),
+            (historacle_nonstake_algo := abi.Uint64()).set(rewards_accumulation.algo_non_stake),
+            (historacle_nonstake_gora := abi.Uint64()).set(rewards_accumulation.gora_non_stake),
             (algo := abi.Uint64()).set(get_unclaimed_rewards_algo.value() + historacle_algo.get() - manager_share_algo.get()),
             (gora := abi.Uint64()).set(get_unclaimed_rewards_gora.value() + historacle_gora.get() - manager_share_gora.get()),
 
-            (account_rewards := RewardsTracker()).set(algo, gora),
+            (account_rewards := RewardsTracker()).set(algo, gora, historacle_nonstake_algo, historacle_nonstake_gora),
             Return(account_rewards.encode())
         ])
 
@@ -503,6 +531,7 @@ class StakeDelegator(Application):
         account_rewards_old = abi.make(RewardsTracker)
         account_rewards_new = abi.make(RewardsTracker)
         adjustment = ScratchVar(TealType.uint64)
+
         get_old_rewards = Seq([
             (round_info := TimeoutTracker()).decode(self.global_aggregation_round.get()),
             (current_round := abi.Uint64()).set(round_info.aggregation_round),
@@ -515,7 +544,7 @@ class StakeDelegator(Application):
                 ])).
             Else(
                 Seq([
-                    account_rewards_old.decode(Bytes(RewardsTrackerAlgoSdk.encode([0, 0])))
+                    account_rewards_old.decode(Bytes(RewardsTrackerAlgoSdk.encode([0, 0, 0, 0])))
                 ])
             )
         ])
@@ -531,7 +560,7 @@ class StakeDelegator(Application):
                 ])).
             Else(
                 Seq([
-                    account_rewards_new.decode(Bytes(RewardsTrackerAlgoSdk.encode([0, 0])))
+                    account_rewards_new.decode(Bytes(RewardsTrackerAlgoSdk.encode([0, 0, 0, 0])))
                 ])
             )
         ])
@@ -576,7 +605,9 @@ class StakeDelegator(Application):
                 share_algo.set(((new_rewards_algo.get() * Btoi(tmp_stake_time.load())) / (Btoi(self.global_stake_time.get()) - adjustment.load()) )),
                 share_gora.set(((new_rewards_gora.get() * Btoi(tmp_stake_time.load())) / (Btoi(self.global_stake_time.get()) - adjustment.load()) )),
             ])),
-            (owed_rewards := RewardsTracker()).set(share_algo, share_gora),
+            (non_stake_algo := abi.Uint64()).set(account_rewards_new.algo_non_stake),
+            (non_stake_gora := abi.Uint64()).set(account_rewards_new.gora_non_stake),
+            (owed_rewards := RewardsTracker()).set(share_algo, share_gora, non_stake_algo, non_stake_gora),
             
             self.reset_global_stake_time(tmp_stake_time.load()),
             Return(owed_rewards.encode())
@@ -718,14 +749,17 @@ class StakeDelegator(Application):
                 vesting_info.decode(self.vesting_tracker[self.userAddr.load()].get()),
                 vesting_amount.set(vesting_info.vested_amount),
                 (account_non_stake := RewardsTracker()).decode(self.local_non_stake[self.userAddr.load()].get()),
-                algo_to_withdraw.set(account_non_stake.algo_rewards),
-                gora_to_withdraw.set(account_non_stake.gora_rewards),
+                algo_to_withdraw.set(account_non_stake.algo_non_stake),
+                gora_to_withdraw.set(account_non_stake.gora_non_stake),
+                (algo_rewards := abi.Uint64()).set(account_non_stake.algo_rewards),
+                (gora_rewards := abi.Uint64()).set(account_non_stake.gora_rewards),
                 #assures that user cannot withdraw vested balance
                 gora_to_withdraw.set(gora_to_withdraw.get() - vesting_amount.get()),
                 If(algo_to_withdraw.get() > Int(0)).Then(self.send_algo(Txn.sender(), algo_to_withdraw.get())),
                 If(gora_to_withdraw.get() > Int(0)).Then(self.send_asset(GORA_TOKEN_ID , Txn.sender(), gora_to_withdraw.get())),
+
                 (zero := abi.Uint64()).set(Int(0)),
-                account_non_stake.set(zero,zero),
+                account_non_stake.set(algo_rewards, gora_rewards, zero,zero),
                 self.local_non_stake[self.userAddr.load()].set(account_non_stake.encode())
             ])).
             ElseIf(vesting_on_behalf_of.address() != Global.zero_address()).Then(
