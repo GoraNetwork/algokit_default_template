@@ -210,7 +210,7 @@ def demo() -> None:
         main_app_reference=main_app.id
     )
     print("Request tx_id: ", call_response.tx_id)
-    pprint(call_response.tx_info["txn"])  # Submit a request to a local Goracle instance
+    pprint(call_response.tx_info["txn"])
 
 if __name__ == "__main__":
     demo()

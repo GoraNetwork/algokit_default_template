@@ -107,6 +107,9 @@ class Main_Contract():
         
         else:
             path_to_abi_spec = protocol_filepath + "/assets/abi/main-contract.json"
+            sp = self.client.suggested_params()
+            sp.flat_fee = True
+            sp.fee = 2000
 
             init_group = AtomicTransactionComposer()
             init_group.add_method_call(
@@ -116,7 +119,7 @@ class Main_Contract():
                     "init"
                 ),
                 sender=user.address,
-                sp=self.client.suggested_params(),
+                sp=sp,
                 signer=AccountTransactionSigner(user.private_key),
                 method_args=[
                     self.gora_asset_id,
