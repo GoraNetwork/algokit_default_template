@@ -25,10 +25,11 @@ app = default_app.app
 
 def demo() -> None:
     # cli: algokit localnet start
+    subprocess.run(["algokit","localnet","reset"])
+    subprocess.run(["algokit","localnet","start"])
 
     # import algod with localnet params
     client = ALGOD_CLIENT
-    print(client.versions())
 
     # get suggested params
     suggested_params = client.suggested_params()
