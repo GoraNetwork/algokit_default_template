@@ -1,4 +1,4 @@
-# Playground 
+# Goracle Default Template Example Application
 
 This project has been generated using AlgoKit to help you quickly get started with a basic app to interact with the Goracle protocol and for experimenting with Beaker smart contracts against a [LocalNet](https://github.com/algorandfoundation/algokit-cli/blob/main/docs/features/localnet.md) network.
 
