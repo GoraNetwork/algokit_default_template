@@ -80,7 +80,7 @@ def demo() -> None:
     main_clear_out_compiled = compileTeal(main_clear_out.stdout)
     main_clear_out_bytes = base64.b64decode(main_clear_out_compiled["result"])
 
-    main_app = Main_Contract(
+    main_app = MainContract(
         client,
         owner,
         asset_id,
@@ -89,15 +89,26 @@ def demo() -> None:
         owner.address
     )
 
+    # deploy a vote contract
+    fund_account(main_app.address, 12_855_000)
+    vote_app = main_app.deploy_voting_contract()
+
     #generate a requester and opt into Gora token
     requester = generate_account()
     fund_account(requester.address,1_000_000)
-    opt_in(token_id=asset_id,user=requester)
+    opt_in_token(token_id=asset_id,user=requester)
 
     send_asa(owner,requester,asset_id,50_000_000_000)
 
     fund_account(main_app.address, 202_000)
-    # fund_account(main_app_address, 2955000)
+
+    # mock voting and request processing
+    voter = prepare_voter(
+        asset_id,
+        owner,
+        main_app,
+        vote_app
+    )
 
     # compile the app spec and teal files
     default_app_client = None
@@ -210,7 +221,12 @@ def demo() -> None:
         main_app_reference=main_app.id
     )
     print("Request tx_id: ", call_response.tx_id)
-    pprint(call_response.tx_info["txn"])
+    # pprint(call_response.tx_info["txn"])
+    print("\n")
+    print("## Request successfully submitted! ##")
+
+    # submit vote
+    
 
 if __name__ == "__main__":
     demo()

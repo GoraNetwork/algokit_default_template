@@ -2,7 +2,6 @@
 import os
 import algokit_utils
 import json
-import io
 from Crypto.Hash import SHA512
 from pprint import pprint
 import sys
@@ -14,27 +13,223 @@ sys.path.append(".")
 
 from algosdk.transaction import (
     ApplicationCreateTxn,
+    ApplicationCallTxn,
+    ApplicationOptInTxn,
     AssetCreateTxn,
     AssetTransferTxn,
+    LogicSigAccount,
     OnComplete,
     PaymentTxn,
     StateSchema,
     wait_for_confirmation
 )
 from algosdk.account import generate_account as ga
+from algosdk.encoding import decode_address
 from algosdk.atomic_transaction_composer import (
     AtomicTransactionComposer,
     TransactionWithSigner,
     AccountTransactionSigner
 )
 from algosdk.abi.method import get_method_by_name, Method
+from algosdk import abi
 from algosdk.logic import *
 from algokit_utils import ApplicationClient,Account
 from algosdk.v2client.algod import AlgodClient
+from abi_structures import *
 
 ALGOD_CLIENT = algokit_utils.get_algod_client()
 
-class Main_Contract():
+class VoteContract():
+    def __init__(
+        self,
+        algod_client: AlgodClient,
+        id: int,
+        main_app_id: int
+    ):
+        self.id = id
+        self.address = get_application_address(self.id)
+        self.client = algod_client
+        self.main_app_id = main_app_id
+
+    def _get_vote_hash(
+        destination_app_id:int,
+        destination_sig:bytes,
+        requester_address:str,
+        request_id:bytes,
+        user_vote:str | bytes,
+        user_data:str,
+        error_code:int,
+        bit_field:int
+    ):
+        response_body = response_body_type.encode([
+            request_id,
+            requester_address,
+            user_vote,
+            user_data,
+            error_code,
+            bit_field
+        ])
+        response_body_bytes = response_body_bytes_type.encode(response_body)
+
+    def register_voter(
+        self,
+        participation_account: Account,
+        primary_account_address: str,
+    ):        
+        atc = AtomicTransactionComposer()
+
+        unsigned_payment_txn = PaymentTxn(
+            sender=participation_account.address,
+            sp=self.client.suggested_params(),
+            receiver=get_application_address(self.id),
+            amt=54100 + 66900
+        )
+        signer = AccountTransactionSigner(participation_account.private_key)
+        signed_payment_txn = TransactionWithSigner(
+            unsigned_payment_txn,
+            signer
+        )
+
+        path_to_abi_spec = protocol_filepath + "/assets/abi/voting-contract.json"
+        
+        atc.add_method_call(
+            app_id=self.id,
+            method=get_method_by_name(
+                get_methods_list(path_to_abi_spec),
+                "register_voter"
+            ),
+            sender=participation_account.address,
+            sp=self.client.suggested_params(),
+            signer=signer,
+            method_args=[
+                signed_payment_txn,
+                decode_address(primary_account_address),
+                self.main_app_id
+            ],
+            boxes=[(self.id,decode_address(primary_account_address))]
+        )
+
+        result = atc.execute(self.client,4)
+        return result
+    
+    def vote(
+        self,
+        vote_verify_lsig_acct:LogicSigAccount,
+        vrf_result:str,
+        vrf_proof:str,
+        request_round_seed:bytes,
+        request_key_hash:bytes,
+        previous_vote:bytes,
+        primary_account_address:str,
+        participation_account:Account,
+        destination_app_id:int,
+        destination_method:bytes,
+        requester_address:str,
+        vote_count:int,
+        z_index:int,
+    ):
+        atc = AtomicTransactionComposer()
+
+        sp = self.client.suggested_params()
+        sp.flat_fee = True
+        sp.fee = 0
+
+        byte64_type = abi.ArrayStaticType(abi.ByteType(),64)
+        byte80_type = abi.ArrayStaticType(abi.ByteType(),80)
+
+        primary_account_pk = decode_address(requester_address)
+        previous_vote_box = self.client.application_box_by_name(self.id,primary_account_pk)
+        previous_vote_entry = local_history_entry.decode(previous_vote_box)
+        previous_requester = previous_vote_entry[1][5]
+
+        signer = vote_verify_lsig_acct
+
+        key_hash = 
+
+        vote_verify_box_array = [
+            (
+                self.id,
+                previous_vote_entry[1][0] # previous_vote proposal
+            ),
+            (
+                self.main_app_id,
+                request_key_hash
+            ),
+            (
+                self.main_app_id,
+                key_hash
+            )
+        ]
+
+        atc.add_method_call(
+            app_id=self.main_app_id,
+            method=get_method_by_name(
+                get_methods_list(protocol_filepath + "/assets/abi/main-contract.json"),
+                "claim_rewards_vote_verify"
+            ),
+            sender=vote_verify_lsig_acct.address(),
+            sp=sp,
+            signer=vote_verify_lsig_acct,
+            method_args=[
+                byte64_type.encode(vrf_result),
+                byte80_type.encode(vrf_proof),
+                request_round_seed,
+                request_key_hash,
+                previous_vote
+            ],
+            accounts=[
+                participation_account.address,
+                primary_account_address,
+                self.address,
+                previous_requester
+            ],
+            foreign_apps=[
+                self.id
+            ],
+            boxes=vote_verify_box_array
+        )
+
+        sp = self.client.suggested_params()
+        sp.flat_fee = True
+        sp.fee = 2000
+
+        atc.add_method_call(
+            method=get_method_by_name(
+                get_methods_list(protocol_filepath + "/assets/abi/voting-contract.json"),
+                "vote"
+            ),
+            lease=lease,
+            method_args=[
+                byte64_type.encode(vrf_result),
+                byte80_type.encode(vrf_proof),
+                self.main_app_id,
+                destination_app_id,
+                destination_method,
+                requester_address,
+                primary_account_pk,
+                response_type,
+                response_body,
+                vote_count,
+                z_index,
+                atc.txn_list[0]
+            ],
+            boxes=[
+                vote_box_array,
+                box_refs
+            ],
+            foreign_apps=[app_refs],
+            accounts=[account_refs],
+            foreign_assets=[asset_refs],
+            app_id=self.id,
+            sp=sp,
+            sender=participation_account.address,
+            signer=signer,            
+        )
+
+        result = atc.execute(self.client,4)
+        return result
+
+class MainContract():
     def __init__(
         self,
         algod_client: AlgodClient,
@@ -226,17 +421,122 @@ class Main_Contract():
 
         result = atc.execute(self.client,4)
         return result
+    
+    def register_key(
+        self,
+        user: Account,
+        participation_account_address: str
+    ):
+        atc = AtomicTransactionComposer()
+
+        path_to_abi_spec = protocol_filepath + "/assets/abi/main-contract.json"
+        
+        atc.add_method_call(
+            app_id=self.id,
+            method=get_method_by_name(
+                get_methods_list(path_to_abi_spec),
+                "register_participation_account"
+            ),
+            sender=user.address,
+            sp=self.client.suggested_params(),
+            signer=AccountTransactionSigner(user.private_key),
+            method_args=[
+                decode_address(participation_account_address)
+            ]
+        )
+
+        result = atc.execute(self.client,4)
+        return result
+    
+    def deploy_voting_contract(
+        self,
+        user = None,
+    ):
+        if user == None:
+            user = self.owner
+        elif type(user) != Account:
+            raise TypeError("Only Account type is allowed")
+        
+        atc = AtomicTransactionComposer()
+
+        path_to_abi_spec = protocol_filepath + "/assets/abi/main-contract.json"
+
+        sp = self.client.suggested_params()
+        sp.flat_fee = True
+        sp.fee = 3000
+        
+        atc.add_method_call(
+            app_id=self.id,
+            method=get_method_by_name(
+                get_methods_list(path_to_abi_spec),
+                "deploy_voting_contract"
+            ),
+            sender=user.address,
+            sp=sp,
+            signer=AccountTransactionSigner(user.private_key),
+            method_args=[]
+        )
+
+        txn_result = atc.execute(self.client,4)
+        vote_app_id = txn_result.abi_results[0].tx_info["inner-txns"][0]["application-index"]
+
+        vote_contract = VoteContract(
+            self.client,
+            vote_app_id,
+            self.id
+        )
+
+        return vote_contract
+    
+    def stake(
+        self,
+        user: Account,
+        amount: int
+    ):
+        atc = AtomicTransactionComposer()
+
+        unsigned_transfer_txn = AssetTransferTxn(
+            sender=user.address,
+            sp=self.client.suggested_params(),
+            receiver=get_application_address(self.id),
+            amt=amount,
+            index=self.gora_asset_id
+        )
+        signer = AccountTransactionSigner(user.private_key)
+        signed_transfer_txn = TransactionWithSigner(
+            unsigned_transfer_txn,
+            signer
+        )
+
+        path_to_abi_spec = protocol_filepath + "/assets/abi/main-contract.json"
+        
+        atc.add_method_call(
+            app_id=self.id,
+            method=get_method_by_name(
+                get_methods_list(path_to_abi_spec),
+                "stake"
+            ),
+            sender=user.address,
+            sp=self.client.suggested_params(),
+            signer=signer,
+            method_args=[
+                signed_transfer_txn
+            ]
+        )
+
+        result = atc.execute(self.client,4)
+        return result
+
+class GoracleUser():
+    def __init__(self):
+        self.voter_account = generate_account()
+        self.participation_account = generate_account()
 
 def generate_account() -> Account:
     new_account = ga()
-    # conformed_account = Account(new_account[0],new_account[1])
-    # conformed_account.private_key = new_account[0]
-    # conformed_account.address = new_account[1]
-
-    # return conformed_account
     return Account(private_key=new_account[0],address=new_account[1])
 
-def fund_account(receiver_address,amount:int):
+def fund_account(receiver_address:str,amount:int):
     # get dispenser account
     dispenser_account = algokit_utils.get_dispenser_account(ALGOD_CLIENT)
     suggested_params = ALGOD_CLIENT.suggested_params()
@@ -318,7 +618,7 @@ def compileTeal(program_source:bytes | str):
 
     return compile_response
 
-def opt_in(token_id:int,user:Account):
+def opt_in_token(token_id:int,user:Account):
     suggested_params = ALGOD_CLIENT.suggested_params()
 
     unsigned_txn = AssetTransferTxn(
@@ -327,6 +627,21 @@ def opt_in(token_id:int,user:Account):
         receiver=user.address,
         index=token_id,
         amt=0
+    )
+    signed_txn = unsigned_txn.sign(user.private_key)
+
+    txid = ALGOD_CLIENT.send_transaction(signed_txn)
+    txn_result = wait_for_confirmation(ALGOD_CLIENT,txid,4)
+
+    return json.dumps(txn_result, indent=4)
+
+def opt_into_app(user:Account,app_id:int):
+    suggested_params = ALGOD_CLIENT.suggested_params()
+
+    unsigned_txn = ApplicationOptInTxn(
+        sender=user.address,
+        sp=suggested_params,
+        index=app_id,
     )
     signed_txn = unsigned_txn.sign(user.private_key)
 
@@ -356,3 +671,34 @@ def send_asa(
     txn_result = wait_for_confirmation(ALGOD_CLIENT,txid,4)
 
     return json.dumps(txn_result, indent=4)
+
+# mock voting and request processing
+def prepare_voter(asset_id:int,owner:Account,main_app:MainContract,vote_app:VoteContract):
+    goracle_user = GoracleUser()
+    fund_account(goracle_user.voter_account.address, 1_500_000)
+    opt_in_token(asset_id,goracle_user.voter_account)
+    send_asa(owner,goracle_user.voter_account,asset_id,50_000_000_000)
+    fund_account(goracle_user.participation_account.address, 1_500_000)
+    fund_account(goracle_user.voter_account.address, 1_500_000)
+
+    # opt primary account into main contract
+    opt_into_app(goracle_user.voter_account,main_app.id)
+    opt_into_app(goracle_user.participation_account,main_app.id)
+
+    # register voter public key on the main app
+    main_app.register_key(
+        goracle_user.voter_account,
+        goracle_user.participation_account.address
+    )
+
+    # register participation key on the vote app
+    vote_app.register_voter(
+        goracle_user.participation_account,
+        goracle_user.voter_account.address
+    )
+
+    # voter stakes to be able to have votes
+    main_app.stake(goracle_user.voter_account,500_000_000)
+    main_app.deposit_algo(goracle_user.voter_account,100_000)
+    main_app.deposit_token(goracle_user.voter_account,40_000_000_000)
+    return goracle_user
