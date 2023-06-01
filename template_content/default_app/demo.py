@@ -19,6 +19,7 @@ sys.path.append('.')
 
 import default_app
 from utils import *
+from abi_structures import response_body_type,user_vote_type,price_box_tuple
 from build import build
 
 app = default_app.app
@@ -103,7 +104,7 @@ def demo() -> None:
     default_app_client = None
     app_spec_path_str = path + "/default_app/artifacts/application.json"
     app_spec_path = Path(app_spec_path_str)
-    build(main_app.id)
+    build(main_app.id,True)
 
     default_app_client = algokit_utils.ApplicationClient(
         algod_client=ALGOD_CLIENT,
@@ -210,7 +211,38 @@ def demo() -> None:
         main_app_reference=main_app.id
     )
     print("Request tx_id: ", call_response.tx_id)
-    pprint(call_response.tx_info["txn"])
+    print("\n")
+    print("## Request successfully submitted! ##")
+
+    # Here we will assume votes have passed and will now pass "validated" data to the contract
+    # Normally this will be done by a voter from the voting contract
+
+    response_body = response_body_type.encode([
+        bytes([0]*32),
+        default_app_address,
+        user_vote_type.encode([
+            [1,1],
+            price_box_name
+        ]),
+        b"this_is_user_data",
+        0,
+        10
+    ])
+
+    default_app_client.call(
+        default_app.write_to_price_box,
+        transaction_parameters=algokit_utils.OnCompleteCallParameters(
+            signer=signer,
+            sender=owner.address,
+            suggested_params=suggested_params,
+            boxes=[(default_app_id,price_box_name)]
+        ),
+        response_type_bytes=abi.ArrayDynamicType(abi.ByteType()).encode([1]),
+        response_body_bytes=response_body
+    )
+    
+    # now we'll hop over to dappflow and you can view the box information
+    subprocess.run(["algokit", "localnet", "explore"])
 
 if __name__ == "__main__":
     demo()

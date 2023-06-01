@@ -29,6 +29,7 @@ RSKEYMAP = protocol_key_map['request_status']
 
 MAIN_APP_ID = Int(0)
 MAIN_APP_ADDRESS = Bytes("")
+DEMO_MODE = False
 
 app = beaker.Application("DefaultApp",build_options=beaker.BuildOptions(avm_version=8))
 
@@ -64,20 +65,13 @@ def create_price_box(
 
 def verify_app_call():
     # assert that this is coming from a voting contract
-    current_request_info_bytes = App.globalGetEx(Global.caller_app_id(),VGKEYMAP["current_request_info"])
     voting_contract_creator = App.globalGetEx(Global.caller_app_id(),VGKEYMAP["creator"])
     vote_app_creator = AppParam.creator(Global.caller_app_id())
 
     return Seq(
-        current_request_info_bytes,
-        Assert(current_request_info_bytes.hasValue()),
-        (current_request_info := abi.make(RequestInfo)).decode(current_request_info_bytes.value()),
-        current_request_info.request_status.store_into(request_status := abi.make(abi.Uint8)),
         vote_app_creator,
         voting_contract_creator,
         Assert(
-            # TODO: is request_status necessary? If so, we will need to reorder the innerTxn in voting contract
-            # request_status.get() == RSKEYMAP["completed"],
             vote_app_creator.value() == MAIN_APP_ADDRESS,
             vote_app_creator.value() == voting_contract_creator.value(),
             Txn.application_id() == Global.current_application_id(),
@@ -89,6 +83,10 @@ def write_to_price_box(
     response_type_bytes: abi.DynamicBytes,
     response_body_bytes: abi.DynamicBytes,
 ):
+    verify = verify_app_call()
+    if DEMO_MODE:
+        verify = Assert(Int(1) == Int(1))
+
     return Seq(
         (response_body := abi.make(ResponseBody)).decode(response_body_bytes.get()),        
         response_body.oracle_return_value
@@ -104,7 +102,7 @@ def write_to_price_box(
         Assert(
             price.get() == Int(1)
         ),
-        verify_app_call(),
+        verify,
         App.box_put(box_name.get(),price_box.encode())
     )
 
@@ -187,6 +185,7 @@ def opt_in_gora(
 
 if __name__ == "__main__":
     params = yaml.safe_load(sys.argv[1])
-    MAIN_APP_ID = Int(params['MAIN_APP_ID'])
+    MAIN_APP_ID = Int(params["MAIN_APP_ID"])
     MAIN_APP_ADDRESS = Bytes(algosdk.encoding.decode_address(algosdk.logic.get_application_address(params['MAIN_APP_ID'])))
+    DEMO_MODE = params["DEMO_MODE"]
     app_spec = app.build(beaker.localnet.get_algod_client()).export(path + "/default_app/artifacts/")
