@@ -4,6 +4,7 @@ import sys
 import os
 import subprocess
 import base64
+import json
 from pathlib import Path
 from algosdk import atomic_transaction_composer as atc, abi,encoding
 from algosdk.transaction import LogicSigAccount
@@ -14,17 +15,24 @@ load_dotenv()
 path = os.getcwd()
 parent = os.path.dirname(path)
 sys.path.append(parent)
+default_app_path = path + "/default_app"
 protocol_filepath = path + "/protocol"
 sys.path.append('.')
 
 import default_app
 from utils import *
-from abi_structures import response_body_type,user_vote_type,price_box_tuple
+from abi_structures import response_body_type
 from build import build
 
 app = default_app.app
 
 def demo() -> None:
+    with open(default_app_path + "/feed_examples.json") as f:
+        feed_examples = json.load(f)
+    feed_type = "defi"
+    feed_example = feed_examples[feed_type]
+    feed_result_bytes = convert_feed_result_json(feed_example)
+
     # cli: algokit localnet start
     subprocess.run(["algokit","localnet","reset"])
     subprocess.run(["algokit","localnet","start"])
@@ -102,7 +110,7 @@ def demo() -> None:
 
     # compile the app spec and teal files
     default_app_client = None
-    app_spec_path_str = path + "/default_app/artifacts/application.json"
+    app_spec_path_str = default_app_path + "/artifacts/application.json"
     app_spec_path = Path(app_spec_path_str)
     build(main_app.id,True)
 
@@ -125,41 +133,18 @@ def demo() -> None:
         """
     )
 
-    # Create a price box
-    price_box_name = b"eth/usd"
-    price_box_cost = (len(price_box_name) + 8) * 400 + 2500
-    
-    create_box_atc = atc.AtomicTransactionComposer()
+    # Create a data box
+    data_box_name = bytes(feed_type,"utf-8")
 
+    # we add 8 to account for the abi array length indicator at the beginning
+    print(len(feed_result_bytes))
+    data_box_cost = (len(data_box_name) + len(feed_result_bytes) + 8) * 400 + 2500
+    
     signer = atc.AccountTransactionSigner(owner.private_key)
-    unsigned_payment_txn = PaymentTxn(
-        sender=owner.address,
-        sp=suggested_params,
-        receiver=default_app_address,
-        amt=price_box_cost
-    )
-    signed_payment_txn = atc.TransactionWithSigner(
-        unsigned_payment_txn,
-        signer
-    )
-
-    default_app_client.compose_call(
-        create_box_atc,
-        call_abi_method=default_app.create_price_box,
-        transaction_parameters=algokit_utils.OnCompleteCallParameters(
-            signer=signer,
-            sender=owner.address,
-            suggested_params=suggested_params,
-            boxes=[(default_app_id,price_box_name)]
-        ),
-        algo_xfer=signed_payment_txn,
-        box_name=price_box_name
-    )
-    
-    default_app_client.execute_atc(create_box_atc)
 
     # Set up app to make requests
-    fund_account(default_app_address, 602_500)
+    fund_account(default_app_address, 602_500 + data_box_cost)
+
     default_app_client.call(
         default_app.opt_in_gora,
         asset_reference=asset_id,
@@ -202,7 +187,7 @@ def demo() -> None:
             suggested_params=suggested_params,
             boxes=[(main_app.id,box_name_type.encode(box_name))]
         ),
-        box_name=price_box_name,
+        box_name=data_box_name,
         key=key,
         token_asset_id=asset_id,
         source_arr=[[6,source_args_arr,60]],
@@ -216,26 +201,22 @@ def demo() -> None:
 
     # Here we will assume votes have passed and will now pass "validated" data to the contract
     # Normally this will be done by a voter from the voting contract
-
     response_body = response_body_type.encode([
         bytes([0]*32),
         default_app_address,
-        user_vote_type.encode([
-            [1,1],
-            price_box_name
-        ]),
+        feed_result_bytes,
         b"this_is_user_data",
         0,
         10
     ])
 
     default_app_client.call(
-        default_app.write_to_price_box,
+        default_app.write_to_data_box,
         transaction_parameters=algokit_utils.OnCompleteCallParameters(
             signer=signer,
             sender=owner.address,
             suggested_params=suggested_params,
-            boxes=[(default_app_id,price_box_name)]
+            boxes=[(default_app_id,data_box_name)]
         ),
         response_type_bytes=abi.ArrayDynamicType(abi.ByteType()).encode([1]),
         response_body_bytes=response_body
