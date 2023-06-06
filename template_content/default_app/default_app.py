@@ -10,19 +10,15 @@ load_dotenv()
 path = os.getcwd()
 parent = os.path.dirname(path)
 sys.path.append(parent)
+default_app_path = path + "/default_app"
 protocol_filepath = path + "/protocol"
 sys.path.append(".")
 
 from abi_structures import *
-from key_map import key_map
 from protocol.assets.helpers.key_map import key_map as protocol_key_map
 from protocol.utils.gora_pyteal_utils import opt_in as gora_opt_in,get_method_signature,opt_in_asset
 from protocol.utils.abi_types import *
 
-KEYMAP = key_map['consumer']
-GKEYMAP = KEYMAP['global']
-LKEYMAP = KEYMAP['local']
-BKEYMAP = KEYMAP['boxes']
 MLKEYMAP = protocol_key_map['main_local']
 VGKEYMAP = protocol_key_map['voting_global']
 RSKEYMAP = protocol_key_map['request_status']
@@ -31,7 +27,10 @@ MAIN_APP_ID = Int(0)
 MAIN_APP_ADDRESS = Bytes("")
 DEMO_MODE = False
 
-app = beaker.Application("DefaultApp",build_options=beaker.BuildOptions(avm_version=8))
+class MyState:
+    box_name = beaker.GlobalStateValue(TealType.bytes)
+
+app = beaker.Application("DefaultApp",state=MyState(),build_options=beaker.BuildOptions(avm_version=8))
 
 @app.opt_in
 def opt_in():
@@ -43,24 +42,6 @@ def opt_in():
 def delete():
     return Seq(
         Reject()
-    )
-
-@app.external
-def create_price_box(
-    algo_xfer: abi.PaymentTransaction,
-    box_name: abi.DynamicBytes
-):
-    return Seq(
-        Assert(
-            algo_xfer.get().sender() == Txn.sender(),
-            algo_xfer.get().amount() == Int(2500) + (Int(400) * ((box_name.length()) + Int(abi.size_of(abi.Uint64)))),
-            algo_xfer.get().receiver() == Global.current_application_address(),
-            algo_xfer.get().type_enum() == TxnType.Payment,
-            algo_xfer.get().close_remainder_to() == Global.zero_address(),
-            algo_xfer.get().rekey_to() == Global.zero_address(),
-            algo_xfer.get().lease() == Global.zero_address()
-        ),
-        Pop(App.box_create(box_name.get(),Int(abi.size_of(PriceBoxTuple))))
     )
 
 def verify_app_call():
@@ -79,7 +60,7 @@ def verify_app_call():
     )
 
 @app.external
-def write_to_price_box(
+def write_to_data_box(
     response_type_bytes: abi.DynamicBytes,
     response_body_bytes: abi.DynamicBytes,
 ):
@@ -91,19 +72,11 @@ def write_to_price_box(
         (response_body := abi.make(ResponseBody)).decode(response_body_bytes.get()),        
         response_body.oracle_return_value
         .store_into(oracle_return_value := abi.make(abi.DynamicArray[abi.Byte])),
-        (user_vote := abi.make(UserVote)).decode(Substring(
-                oracle_return_value._stored_value.load(),
-                Int(2),
-                Len(oracle_return_value._stored_value.load())
-        )),
-        user_vote.box_name.store_into(box_name := abi.make(abi.DynamicBytes)),
-        user_vote.price_box.store_into(price_box := abi.make(PriceBoxTuple)),
-        price_box.price.store_into(price := abi.make(abi.Uint64)),
-        Assert(
-            price.get() == Int(1)
-        ),
+        Pop(App.box_delete(app.state.box_name.get())),
+        # the plus 2 is to account for the length indicator for dynamic abi arrays
+        Pop(App.box_create(app.state.box_name.get(),oracle_return_value.length()+Int(2))),
         verify,
-        App.box_put(box_name.get(),price_box.encode())
+        App.box_put(app.state.box_name.get(),oracle_return_value.encode())
     )
 
 @app.external
@@ -118,6 +91,7 @@ def send_request(
 ):
     
     return Seq(
+        app.state.box_name.set(box_name.get()),
         # request_args
         Assert(MAIN_APP_ID == Txn.applications[1]),
         (request_tuple := abi.make(RequestSpec)).set(
@@ -128,7 +102,7 @@ def send_request(
 
         # destination
         (app_id_param := abi.Uint64()).set(Txn.applications[0]),
-        (method_sig_param := abi.DynamicBytes()).set(Bytes(write_to_price_box.method_signature())),
+        (method_sig_param := abi.DynamicBytes()).set(Bytes(write_to_data_box.method_signature())),
         (destination_tuple := abi.make(DestinationSpec)).set(
             app_id_param,
             method_sig_param
@@ -152,8 +126,8 @@ def send_request(
         (accounts_refs:= abi.make(abi.StaticArray[abi.Address,L[1]])).set([current_app_addr]),
         
         # box_refs
-        (price_box := abi.make(BoxType)).set(box_name,current_app_id),
-        (box_refs := abi.make(abi.DynamicArray[BoxType])).set([price_box]),
+        (data_box := abi.make(BoxType)).set(box_name,current_app_id),
+        (box_refs := abi.make(abi.DynamicArray[BoxType])).set([data_box]),
         InnerTxnBuilder.Begin(),
         InnerTxnBuilder.MethodCall(
             app_id= MAIN_APP_ID,
@@ -188,4 +162,4 @@ if __name__ == "__main__":
     MAIN_APP_ID = Int(params["MAIN_APP_ID"])
     MAIN_APP_ADDRESS = Bytes(algosdk.encoding.decode_address(algosdk.logic.get_application_address(params['MAIN_APP_ID'])))
     DEMO_MODE = params["DEMO_MODE"]
-    app_spec = app.build(beaker.localnet.get_algod_client()).export(path + "/default_app/artifacts/")
+    app_spec = app.build(beaker.localnet.get_algod_client()).export(default_app_path + "/artifacts/")

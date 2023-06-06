@@ -1,0 +1,180 @@
+{
+  "defi":{
+    "name": "btc/usd",
+    "price": 25729.738,
+    "timestamp": 1686018544054
+  },
+  "game_odds":{
+    "startTime": 1686355200,
+    "status": 1,
+    "awayTeamName": "Inter",
+    "homeTeamName": "Manchester City",
+    "homeTeamScore": null,
+    "awayTeamScore": null,
+    "homeMoneyLine": 1.44,
+    "awayMoneyLine": 6.75,
+    "drawMoneyLine": 4.6
+  },
+  "asset_floor_price":{
+    "name": "Golf",
+    "creator": "RivenRibbon",
+    "collection_name": "SuperRare",
+    "collection_slug": "superrare",
+    "collection_floor_price": 0
+  },
+  "nft_asset_contract":{
+    "collection": {
+        "banner_image_url": "https://i.seadn.io/gcs/static/banners/superrare-banner5.png?w=500&auto=format",
+        "chat_url": null,
+        "created_date": "2018-05-16T18:04:41.000000+00:00",
+        "default_to_fiat": false,
+        "description": "SuperRare makes it easy to create, sell, and collect rare digital art. SuperRare's smart contract platform allows artists to release limited-edition digital artwork tracked on the blockchain, making the pieces rare, verified, and collectible. Filter the crypto art world's best selling works by artist name, creation type, and year of birth on OpenSea.",
+        "dev_buyer_fee_basis_points": "0",
+        "dev_seller_fee_basis_points": "0",
+        "discord_url": "https://discord.gg/superraredao",
+        "display_data": {
+            "card_display_style": "cover"
+        },
+        "external_url": "https://superrare.co",
+        "featured": false,
+        "featured_image_url": "https://i.seadn.io/gae/YhFNM3GpVLCmhT_aVdzEcDfJSjaoqV8-gwrG56ukc9zJqIHqEuw05o_jwf-_cZ8yEAa645GJTtKN7XovzEUNisk_8wuK6X3ae23B3Q?w=500&auto=format",
+        "hidden": false,
+        "safelist_request_status": "verified",
+        "image_url": "https://i.seadn.io/gae/-1VbTF_qOdwTUTxW8KzJbFcMX0-mDF-BJM-gmmRl8ihvoo53PF_1z1m1snLXxwcxVFyJH7wk_kouq-KVyB55N9U?w=500&auto=format",
+        "is_subject_to_whitelist": false,
+        "large_image_url": "https://i.seadn.io/gae/YhFNM3GpVLCmhT_aVdzEcDfJSjaoqV8-gwrG56ukc9zJqIHqEuw05o_jwf-_cZ8yEAa645GJTtKN7XovzEUNisk_8wuK6X3ae23B3Q?w=500&auto=format",
+        "medium_username": "SuperRare_co",
+        "name": "SuperRare",
+        "only_proxied_transfers": false,
+        "opensea_buyer_fee_basis_points": "0",
+        "opensea_seller_fee_basis_points": 250,
+        "payout_address": "0x79150011a8dc56857459f652d165fb772ee6eb1c",
+        "require_email": false,
+        "short_description": null,
+        "slug": "superrare",
+        "telegram_url": null,
+        "twitter_username": "superrare",
+        "instagram_username": null,
+        "wiki_url": null,
+        "is_nsfw": false,
+        "fees": {
+            "seller_fees": {},
+            "opensea_fees": {
+                "0x0000a26b00c1f0df003000390027140000faa719": 250
+            }
+        },
+        "is_rarity_enabled": false,
+        "is_creator_fees_enforced": false
+    },
+    "address": "0xb932a70a57673d89f4acffbe830e8ed7f75fb9e0",
+    "asset_contract_type": "non-fungible",
+    "chain_identifier": "ethereum",
+    "created_date": "2019-09-05T07:39:47.495758",
+    "name": "SuperRare",
+    "nft_version": null,
+    "opensea_version": null,
+    "owner": 173444539,
+    "schema_name": "ERC721",
+    "symbol": "SUPR",
+    "total_supply": "39969",
+    "description": "SuperRare makes it easy to create, sell, and collect rare digital art. SuperRare's smart contract platform allows artists to release limited-edition digital artwork tracked on the blockchain, making the pieces rare, verified, and collectible. Filter the crypto art world's best selling works by artist name, creation type, and year of birth on OpenSea.",
+    "external_link": "https://superrare.co",
+    "image_url": "https://i.seadn.io/gae/-1VbTF_qOdwTUTxW8KzJbFcMX0-mDF-BJM-gmmRl8ihvoo53PF_1z1m1snLXxwcxVFyJH7wk_kouq-KVyB55N9U?w=500&auto=format",
+    "default_to_fiat": false,
+    "dev_buyer_fee_basis_points": 0,
+    "dev_seller_fee_basis_points": 0,
+    "only_proxied_transfers": false,
+    "opensea_buyer_fee_basis_points": 0,
+    "opensea_seller_fee_basis_points": 250,
+    "buyer_fee_basis_points": 0,
+    "seller_fee_basis_points": 250,
+    "payout_address": "0x79150011a8dc56857459f652d165fb772ee6eb1c"
+  },
+  "asset_collection_floor_price":{
+    "collection_name": "Bored Ape Yacht Club",
+    "floor_price": 48
+  },
+  "blockchain_token_transfers":{
+    "amount": "2162000000000000000000",
+    "from": "0x8424a963a31b51c33627e52e7e19bbc86c7dcb79",
+    "logIndex": 39,
+    "to": "0xc12edafbf7bdce4e8897b1c8877398a946db96b2",
+    "tokenAddress": "0x514910771af9ca656af840dff83e8264ecf986ca",
+    "decimals": "18",
+    "name": "ChainLink Token",
+    "symbol": "LINK",
+    "isERC20": true,
+    "isERC721": false,
+    "isERC777": false,
+    "isERC884": false,
+    "isERC998": false,
+    "isERC1155": false
+  },
+  "blockchain_single_transaction":{
+    "blockNumber": "9061064",
+    "blockHash": "0x90f957bdff1b3c90283fc58e0fbadf2a356ed5ca0c8afb07c08498cd23dfc26a",
+    "confirmations": "8361914",
+    "contractAddress": "null",
+    "cumulativeGasUsed": "2141011",
+    "fee": "452840000000000",
+    "from": [
+        {
+            "address": "0x4437271b1bba8b5bee0c72a31e80fadd78122f4c"
+        }
+    ],
+    "gasLimit": "75284",
+    "gasPrice": "20000000000",
+    "gasUsed": "22642",
+    "hash": "0x133f293b44b2eb632a26e8f7c972ad0f6152ca5c78377102e6804c46ebde6c83",
+    "index": 55,
+    "input": "0xa9059cbb0000000000000000000000003f5ce5fbfe3e9af3971dd833d26ba9b5c936f0be0000000000000000000000000000000000000000000000024966f5b0e9ecf800",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000005000000410000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000002000000000000000000000000000000000200000000020000000000000100000000000",
+    "maxFeePerGas": null,
+    "maxPriorityFeePerGas": null,
+    "nonce": "7",
+    "publicKey": "",
+    "r": "0x8c696e3e1df97a0f713b6075e973b399ea509b3344ecd1abf8676fe46aa225ef",
+    "raw": "",
+    "root": "",
+    "s": "0x76e4be3061794162df9b91662d32597448995b8293a7ca0a2b8390274bfa0c0e",
+    "status": "0x1",
+    "timestamp": "2019-12-06T15:00:47.000Z",
+    "to": [
+        {
+            "address": "0xb8c77482e45f1f44de1745f52c74426c631bdd52",
+            "nameNormalized": "Binance Coin"
+        }
+    ],
+    "type": null,
+    "v": "38",
+    "value": "0",
+    "statusResult": {
+        "code": "0x1",
+        "confirmed": true,
+        "success": true,
+        "name": "successful"
+    }
+  },
+  "aggregated_flight_data":{
+    "flight_status": "landed",
+    "scheduled_time": {
+        "aviation-edge": "2023-06-06T14:20:00.000",
+        "flight-labs": "2023-06-06T14:20:00.000"
+    },
+    "estimated_time": {
+        "aviation-edge": "2023-06-06T14:33:00.000",
+        "flight-labs": "2023-06-06T14:33:00.000"
+    },
+    "actual_time": {
+        "aviation-edge": "2023-06-06T14:29:00.000",
+        "flight-labs": "2023-06-06T14:29:00.000"
+    },
+    "delay": {
+        "aviation-edge": 10,
+        "flight-labs": 34
+    },
+    "airline_name": "Emirates",
+    "flight_number": "719",
+    "flight_code": "EK719"
+  }
+}

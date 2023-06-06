@@ -356,3 +356,18 @@ def send_asa(
     txn_result = wait_for_confirmation(ALGOD_CLIENT,txid,4)
 
     return json.dumps(txn_result, indent=4)
+
+def convert_feed_result_json(json_object):
+    # Extract each value of JSON into an array
+    values = list(json_object.values())
+    
+    # Convert each value into a string
+    str_values = [str(value) for value in values]
+    
+    # Convert each string into bytes
+    byte_values = [str_value.encode('utf-8') for str_value in str_values]
+    
+    # Convert the final array into bytes
+    final_bytes = bytes(str(byte_values), 'utf-8')
+    
+    return final_bytes
