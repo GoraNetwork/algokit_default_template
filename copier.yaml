@@ -1,6 +1,6 @@
 _subdirectory: template_content
-_templates: .env.template
-_load_answers_from: .copier-answers.yml
+_templates: template_content/.env.template
+_load_answers_from: template_content/.copier-answers.yml
 
 # The following should never get prompted; algokit should always pass these values through by convention
 
