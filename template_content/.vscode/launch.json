@@ -12,7 +12,7 @@
         "GORACLE_ABI_PATH":"${workspaceFolder}/protocol/assets/abi"
       },
       "console": "integratedTerminal",
-      "preLaunchTask": "Start AlgoKit LocalNet"
+      "preLaunchTask": "Start"
     },
     {
       "name": "Demo current contract",

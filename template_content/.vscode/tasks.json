@@ -3,6 +3,16 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Start .venv",
+      "command": "source",
+      "args": [".venv/bin/activate"],
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}",
+      "problemMatcher": []
+      }
+    },
+    {
       "label": "Start AlgoKit LocalNet",
       "command": "algokit",
       "args": ["localnet", "start"],
@@ -11,6 +21,14 @@
         "cwd": "${workspaceFolder}"
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Start",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Start .venv",
+        "Start AlgoKit LocalNet"
+      ],
     },
     {
       "label": "Stop AlgoKit LocalNet",
