@@ -12,7 +12,7 @@ The Goracle template defines a `send_request` method that encodes a standard Gor
 - The parameters of the API call
 - The GORA asset and main contract references
 
-The template sets the above up for you. If you would like to call a specific feed, take a look at the [Feed Examples](https://github.com/GoracleNetwork/algokit_default_template/blob/main/template_content/default_app/feed_examples.json) which will show you examples of the type of data returned by each feed. You may modify this file to receive the type of specific data you would like. To explore the types of data available on testnet and mainnet, you may use the (Goracle Data Explorer)[https://testnet-app.goracle.io/feeds] to browse feeds and returned values.
+The template sets the above up for you. If you would like to call a specific feed, take a look at the [Feed Examples](https://github.com/GoracleNetwork/algokit_default_template/blob/main/template_content/default_app/feed_examples.json) which will show you examples of the type of data returned by each feed. You may modify this file to receive the type of specific data you would like. To explore the types of data available on testnet and mainnet, you may use the [Goracle Data Explorer](https://testnet-app.goracle.io/feeds) to browse feeds and returned values.
 
 ### Note: For a full understanding of making requests, please visit the [API Documentation](https://github.com/GoracleNetwork/algokit_default_template/blob/main/template_content/default_app/Smart%20Contract%20API.md).
 
@@ -28,4 +28,4 @@ In localnet, a dummy node network is provided that will always reach consensus, 
 
 In testnet and beyond, smart contract will make calls to a network of nodes, and Gas will be required to be paid.
 
-For any questions on implementing the Goracle data feeds, reach out in the (discord developer channel)[https://discord.gg/4TukwqVh]
+For any questions on implementing the Goracle data feeds, reach out in the [discord developer channel](https://discord.gg/4TukwqVh)
