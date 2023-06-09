@@ -4,6 +4,8 @@ This project has been generated using AlgoKit to help you quickly get started wi
 
 See below for default getting started instructions.
 
+For an understanding of the components within the template, visit the (Goracle Template Description)[https://github.com/GoracleNetwork/algokit_default_template/blob/main/template_content/default_app/README.md]
+
 # Setup
 
 ## Quick start
