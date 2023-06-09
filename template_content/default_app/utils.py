@@ -31,6 +31,7 @@ from algosdk.abi.method import get_method_by_name, Method
 from algosdk.logic import *
 from algokit_utils import ApplicationClient,Account
 from algosdk.v2client.algod import AlgodClient
+import algosdk.abi as abi
 
 ALGOD_CLIENT = algokit_utils.get_algod_client()
 
@@ -360,14 +361,10 @@ def send_asa(
 def convert_feed_result_json(json_object):
     # Extract each value of JSON into an array
     values = list(json_object.values())
+    encoded_values = []
+    for value in values:
+        encoded = abi.StringType().encode(f"{value}")
+        encoded_values.append(encoded)
+    dynamic_array = abi.ArrayDynamicType(abi.ABIType.from_string("byte[]")).encode(encoded_values)
     
-    # Convert each value into a string
-    str_values = [str(value) for value in values]
-    
-    # Convert each string into bytes
-    byte_values = [str_value.encode('utf-8') for str_value in str_values]
-    
-    # Convert the final array into bytes
-    final_bytes = bytes(str(byte_values), 'utf-8')
-    
-    return final_bytes
+    return dynamic_array
