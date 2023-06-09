@@ -24,7 +24,7 @@ In the Goracle template, the `write_to_data_box` defines the callback method, an
 
 ## Localnet vs Testnet
 
-In localnet, a dummy node network is provided that will always reach consensus, and always return the data in the (Feed Examples)[https://github.com/GoracleNetwork/algokit_default_template/blob/main/template_content/default_app/feed_examples.json] file. 
+In localnet, a dummy node network is provided that will always reach consensus, and always return the data in the [Feed Examples](https://github.com/GoracleNetwork/algokit_default_template/blob/main/template_content/default_app/feed_examples.json) file. 
 
 In testnet and beyond, smart contract will make calls to a network of nodes, and Gas will be required to be paid.
 
